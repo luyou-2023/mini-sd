@@ -6,10 +6,19 @@ import sys  # 使用当前测试解释器保持环境一致。
 
 from PIL import Image  # 检验生成图片可被标准解码器打开。
 import torch  # 检查检查点可以安全加载。
+import pytest  # 验证旧格式被拒绝时的错误提示。
+from mini_sd.__main__ import _load  # 对加载边界做最小回归验证。
 
 
 def _run(*args):  # 用新进程执行真实命令行入口。
     return subprocess.run([sys.executable, "-m", "mini_sd", *map(str, args)], check=True, capture_output=True, text=True)  # 失败时返回完整异常。
+
+
+def test_legacy_convolution_checkpoint_is_rejected_before_model_load(tmp_path):  # 不允许旧 U-Net 权重伪装成 DiT。
+    path = tmp_path / "legacy.pt"  # 为测试准备旧版风格的权重路径。
+    torch.save({"kind": "image", "base": 8, "model": {}}, path)  # 缺失新架构字段的真实 PyTorch 检查点。
+    with pytest.raises(ValueError, match="旧版卷积|架构不兼容"):  # 要求错误指向架构而非生硬的权重键不匹配。
+        _load(str(path), "image")  # 尝试载入旧图像检查点。
 
 
 def test_image_and_video_train_and_generate(tmp_path):  # 执行训练到媒体导出的完整流程。
@@ -37,3 +46,4 @@ def test_image_and_video_train_and_generate(tmp_path):  # 执行训练到媒体�
     stream = json.loads(probe.stdout)["streams"][0]  # 获取媒体流第一项。
     assert (stream["width"], stream["height"], int(stream["nb_read_frames"])) == (32, 32, 4)  # 验证尺寸与真实帧数。
     assert torch.load(video_model, map_location="cpu", weights_only=True)["kind"] == "video"  # 验证模型文件可安全载入。
+    assert torch.load(video_model, map_location="cpu", weights_only=True)["architecture"] == "dit-v1"  # 确认不会误认旧卷积模型。

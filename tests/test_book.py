@@ -9,7 +9,9 @@ def test_book_is_self_contained_and_contains_real_source(tmp_path):  # 验证内
     assert result.returncode == 0, result.stderr  # 构建失败时输出真实异常。
     html = (tmp_path / "index.html").read_text(encoding="utf-8")  # 回读最终 HTML 内容。
     assert html.startswith("<!DOCTYPE html>")  # 验证完整 HTML 文档结构。
-    assert "VAE" in html and "DDIM" in html and "三维卷积" in html  # 验证核心概念均有教学说明。
+    assert "VAE" in html and "DDIM" in html and "Transformer" in html  # 当前书籍须讲真实扩散 Transformer。
+    assert "_ConditionalDiT" in html and "class TransformerBlock" in html  # 附录嵌入新的注意力实现。
+    assert "三维卷积" not in html and "_ConditionalUNet" not in html  # 不再混入旧去噪骨干。
     assert "class TinyVAE" in html and "class VideoDenoiser" in html  # 验证真实网络源码内嵌。
     assert "train-video" in html and "sample-video" in html  # 验证服务器操作可按书执行。
     assert "src=\"http" not in html and "href=\"http" not in html  # 验证不依赖外部静态资源。

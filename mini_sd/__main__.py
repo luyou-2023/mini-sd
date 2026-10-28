@@ -30,6 +30,8 @@ def _load(path: str, kind: str) -> dict:  # 仅加载本项目可信的检查点
     checkpoint = torch.load(path, map_location="cpu", weights_only=True)  # 禁用普通 pickle 对象反序列化。
     if not isinstance(checkpoint, dict) or checkpoint.get("kind") != kind:  # 检查不同模型的权重没有被混用。
         raise ValueError(f"检查点不是 {kind}：{path}")  # 阻止图像权重当成视频权重。
+    if kind in ("image", "video") and checkpoint.get("architecture") != "dit-v1":  # 拒绝旧卷积权重和未知的去噪骨干。
+        raise ValueError(f"旧版卷积检查点或架构不兼容，请重新训练 {kind}：{path}")  # 旧 VAE 仍可复用。
     return checkpoint  # 返回可复原的纯数据字典。
 
 
@@ -57,8 +59,8 @@ def _next_batches(loader):  # 为有限步数训练循环供给数据。
             yield batch  # 交还一个真实媒体批次。
 
 
-def _validate_size(size: int) -> None:  # 保证 VAE 和 UNet 都能整除空间尺寸。
-    if size < 16 or size % 8:  # 两次 VAE 与一次 UNet 下采样合计要求八倍对齐。
+def _validate_size(size: int) -> None:  # 保证 VAE 和 DiT patch 都能整除空间尺寸。
+    if size < 16 or size % 8:  # 两次 VAE 压缩和 2×2 patch 切分合计要求八倍对齐。
         raise ValueError("训练尺寸至少为 16，且必须是 8 的倍数")  # 让配置错误在训练前暴露。
 
 
@@ -131,7 +133,7 @@ def train_diffusion(args, video: bool) -> None:  # 为图像和视频训练各�
         loss = schedule.train_step(model, latent, prompts, optimizer)  # 执行实际噪声预测梯度更新。
         if local_step % max(1, args.steps // 20) == 0:  # 定期反馈可验证训练进度。
             print(f"{kind} 步数 {finished + local_step + 1}，噪声损失 {loss:.5f}", flush=True)  # 不将损失当成画质指标。
-    payload = {"kind": kind, "size": size, "base": args.base, "diffusion_steps": args.diffusion_steps, "model": model.state_dict(), "optimizer": optimizer.state_dict(), "step": finished + args.steps}  # 封装完整恢复信息。
+    payload = {"kind": kind, "architecture": "dit-v1", "size": size, "base": args.base, "diffusion_steps": args.diffusion_steps, "model": model.state_dict(), "optimizer": optimizer.state_dict(), "step": finished + args.steps}  # 显式标记 Transformer 权重结构并保存恢复信息。
     if video:  # 视频权重需记录固定推理帧数。
         payload["frames"] = args.frames  # 保证训练与推理时序一致。
     _save(args.out, payload)  # 原子保存已训练的模型检查点。

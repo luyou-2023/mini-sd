@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mini SD Lab｜从零训练图像与视频扩散模型</title><style>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mini SD Lab｜从零训练图像与视频扩散 Transformer</title><style>
 :root{--bg:#f7f6f2;--paper:#fff;--ink:#1b2b2b;--soft:#566b69;--line:#dce4df;--accent:#176e62;--cream:#fff5e5}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.85 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
 a{color:var(--accent)}.layout{display:grid;grid-template-columns:264px minmax(0,1fr);min-height:100vh}nav{position:sticky;top:0;height:100vh;overflow:auto;padding:34px 17px 24px 25px;background:#eaf0e9;border-right:1px solid var(--line)}nav .brand{display:block;font-weight:800;letter-spacing:.04em;font-size:19px;color:var(--ink);margin:0 0 4px}nav .sub{font-size:12px;color:var(--soft);margin:0 0 32px}nav a{display:flex;gap:12px;align-items:center;padding:9px 10px;margin:2px 0;border-radius:7px;color:#334742;text-decoration:none;font-size:13px;line-height:1.45}nav a:hover,nav a:focus{background:#dbe9e0;color:#114e44}nav a span{color:var(--accent);font-size:11px;font-weight:700}
 main{min-width:0;padding:0 max(30px,calc((100vw - 1300px)/2)) 80px 52px}.hero{padding:70px 0 67px;border-bottom:1px solid var(--line)}.kicker,.eyebrow{font-size:12px;font-weight:800;letter-spacing:.15em;color:var(--accent)}h1{font-size:clamp(37px,5vw,63px);line-height:1.12;letter-spacing:-.05em;margin:17px 0 15px}h2{font-size:clamp(27px,3vw,38px);letter-spacing:-.04em;line-height:1.25;margin:8px 0 25px}h3{font-size:21px;line-height:1.4;margin:36px 0 12px}p{margin:15px 0;color:#2b3d3a}.hero .intro{font-size:20px;max-width:800px;color:#41534d}.hero .meta{color:var(--soft);font-size:14px;margin-top:30px}.chapter{padding:56px 0 62px;border-bottom:1px solid var(--line);max-width:1050px}.lead{font-size:21px;color:#26433a}.note,.callout{padding:20px 24px;border-radius:10px;border:1px solid #cbded5;background:#eaf4ec;margin:25px 0;color:#234138}.callout{background:var(--cream);border-color:#ecd8b8;color:#604b29}.diagram{width:100%;margin:30px 0;padding:22px;background:white;border:1px solid var(--line);border-radius:12px}.diagram svg{display:block;width:100%;height:auto}.diagram text{font-family:inherit;font-size:16px;fill:#24483f}.diagram figcaption{font-size:13px;color:var(--soft);margin:12px 0 0}.formula{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:white;border:1px solid var(--line);border-radius:10px;padding:18px;margin:28px 0}.formula span{background:#e7f1ea;border-radius:6px;padding:6px 10px}.formula b{font-size:12px;color:var(--accent)}code,pre{font-family:SFMono-Regular,Consolas,Menlo,monospace}p code,li code,td code{font-size:.82em;background:#edf2ec;padding:2px 5px;border-radius:4px;word-break:break-all}.code{background:#f8fafc;color:#172033;border:1px solid #cbd5e1;padding:19px 22px;border-radius:9px;overflow:auto;max-width:100%;font-size:12px;line-height:1.65;white-space:pre;tab-size:4}.code code{background:none;padding:0}.source{border:1px solid var(--line);background:white;border-radius:10px;margin:15px 0;overflow:hidden}.source summary{cursor:pointer;padding:13px 18px;font-size:14px;font-weight:700;color:var(--accent)}.source .code{margin:0;border:0;border-top:1px solid var(--line);border-radius:0;max-height:520px}.steps{padding-left:28px}.steps li{padding:8px 0 8px 10px}table{width:100%;table-layout:fixed;border-collapse:collapse;background:white;margin:25px 0;font-size:14px}th,td{border:1px solid var(--line);padding:12px;vertical-align:top;word-break:break-word}th{background:#edf4ef;text-align:left;color:#245146}footer{padding:35px 0;color:var(--soft);font-size:13px}body{overflow-x:hidden}
 @media(max-width:850px){.layout{display:block}nav{position:static;height:auto;max-height:260px;padding:18px 22px;border-right:0;border-bottom:1px solid var(--line)}nav .sub{margin-bottom:8px}nav .links{display:flex;overflow:auto;gap:5px}nav a{flex:none;max-width:140px}main{padding:0 21px 55px}.hero{padding:43px 0}.chapter{padding:45px 0}.diagram{padding:8px}.diagram text{font-size:18px}.code{font-size:11px}}
 @media print{nav{display:none}.layout{display:block}main{padding:0}.hero{padding:25px 0}.chapter{break-inside:auto;padding:24px 0}.source{display:none}body{background:#fff}.code{white-space:pre-wrap;overflow-wrap:anywhere}}
-</style></head><body><div class="layout"><nav aria-label="章节导航"><div class="brand">Mini SD Lab</div><p class="sub">PYTORCH · 从零到一 · 离线可读</p><div class="links"><a href="#c1"><span>01</span>先决定要造什么</a><a href="#c2"><span>02</span>把图片压成潜变量：VAE</a><a href="#c3"><span>03</span>前向加噪与反向采样</a><a href="#c4"><span>04</span>文字条件：能输入词，不等于懂中文</a><a href="#c5"><span>05</span>二维与三维去噪器</a><a href="#c6"><span>06</span>准备训练材料</a><a href="#c7"><span>07</span>第一遍训练：三种检查点</a><a href="#c8"><span>08</span>第二遍推理：图片与视频</a><a href="#c9"><span>09</span>明天在服务器上怎么开工</a><a href="#c10"><span>10</span>故障排查与限制</a><a href="#c11"><span>11</span>完整源码与练习</a></div></nav><main><header class="hero"><div class="kicker">THE PRACTICAL BOOK</div><h1>从零训练<br>图像与视频扩散模型</h1><p class="intro">一册对照真实 PyTorch 工程的中文实验手册：VAE、二维生图、三维生视频、训练与推理。</p><div class="meta">Mini SD Lab · 代码版本 0.1.0 · 本地技术烟测已跑通，GPU 训练待服务器验证</div></header><section id="c1" class="chapter"><div class="eyebrow">CHAPTER 01</div><h2>先决定要造什么</h2>
+</style></head><body><div class="layout"><nav aria-label="章节导航"><div class="brand">Mini SD Lab</div><p class="sub">PYTORCH · 从零到一 · 离线可读</p><div class="links"><a href="#c1"><span>01</span>先决定要造什么</a><a href="#c2"><span>02</span>把图片压成潜变量：VAE</a><a href="#c3"><span>03</span>前向加噪与反向采样</a><a href="#c4"><span>04</span>文字条件：能输入词，不等于懂中文</a><a href="#c5"><span>05</span>图像与视频扩散 Transformer</a><a href="#c6"><span>06</span>准备训练材料</a><a href="#c7"><span>07</span>第一遍训练：三种检查点</a><a href="#c8"><span>08</span>第二遍推理：图片与视频</a><a href="#c9"><span>09</span>明天在服务器上怎么开工</a><a href="#c10"><span>10</span>故障排查与限制</a><a href="#c11"><span>11</span>完整源码与练习</a></div></nav><main><header class="hero"><div class="kicker">THE PRACTICAL BOOK</div><h1>从零训练<br>图像与视频扩散模型</h1><p class="intro">一册对照真实 PyTorch 工程的中文实验手册：VAE、图像/视频 Transformer、扩散训练与推理。</p><div class="meta">Mini SD Lab · 代码版本 0.2.0 · 本地技术烟测已跑通，GPU 训练待服务器验证</div></header><section id="c1" class="chapter"><div class="eyebrow">CHAPTER 01</div><h2>先决定要造什么</h2>
 <p class="lead">Mini SD Lab 是一台可以拆开的微型图像/视频生成机器：亲自训练一个图像压缩器、两个独立的噪声预测器，再从纯噪声回到图片和短视频。</p>
 <div class="note"><strong>首先看清边界。</strong>这不是 Stable Diffusion 官方权重的轻量复刻，也没有 MiniMax H3 的语义能力。今天能够验证“梯度真的更新、文件真的可解码”；好看的真人角色、长时间动作、实时桌面互动都不在承诺内。</div>
-<p>本书采用“原理 → 对应源码 → 验证命令”的顺序。图像生成使用二维卷积；视频生成使用沿时间轴也卷积的三维网络，并非把单张图复制四次。两种生成都依赖同一个逐帧图像 VAE，但扩散权重彼此独立。</p>
-<figure class="diagram"><svg role="img" aria-label="从数据到图像和视频的完整训练推理链" viewBox="0 0 920 218"><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8Z" fill="#23756c"/></marker></defs><rect x="12" y="50" width="175" height="118" rx="16" fill="#e4efe9"/><text x="35" y="95">授权图片 / 短视频</text><text x="35" y="123">同名 .txt 标注</text><rect x="238" y="50" width="164" height="118" rx="16" fill="#dbeae5"/><text x="280" y="101">图像 VAE</text><text x="267" y="129">像素 → 潜变量</text><rect x="456" y="10" width="194" height="83" rx="16" fill="#d9ece5"/><text x="478" y="47">二维去噪器</text><text x="478" y="71">独立图像权重</text><rect x="456" y="126" width="194" height="83" rx="16" fill="#e8e4d8"/><text x="478" y="164">三维去噪器</text><text x="478" y="189">独立视频权重</text><rect x="716" y="54" width="185" height="112" rx="16" fill="#fbebd7"/><text x="751" y="100">VAE 解码</text><text x="747" y="128">PNG / MP4</text><path d="M187 109 H238 M402 107 L456 52 M402 107 L456 168 M650 52 L716 103 M650 168 L716 116" stroke="#23756c" stroke-width="3" fill="none" marker-end="url(#arrow)"/></svg><figcaption>一条潜空间，两种生成器；尺寸必须在检查点之间一致。</figcaption></figure>
+<p>本书采用“原理 → 对应源码 → 验证命令”的顺序。图像与视频都采用真正的 Transformer 扩散去噪器：图像 token 彼此自注意力，视频 token 覆盖整段的空间与时间；潜变量先由逐帧图像 VAE 编码。两个去噪器结构相近但权重独立，并非把单张图复制四次。</p>
+<figure class="diagram"><svg role="img" aria-label="从数据到图像和视频的完整训练推理链" viewBox="0 0 920 218"><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8Z" fill="#23756c"/></marker></defs><rect x="12" y="50" width="175" height="118" rx="16" fill="#e4efe9"/><text x="35" y="95">授权图片 / 短视频</text><text x="35" y="123">同名 .txt 标注</text><rect x="238" y="50" width="164" height="118" rx="16" fill="#dbeae5"/><text x="280" y="101">图像 VAE</text><text x="267" y="129">像素 → 潜变量</text><rect x="456" y="10" width="194" height="83" rx="16" fill="#d9ece5"/><text x="478" y="47">图像 DiT</text><text x="478" y="71">独立图像权重</text><rect x="456" y="126" width="194" height="83" rx="16" fill="#e8e4d8"/><text x="478" y="164">视频 DiT</text><text x="478" y="189">独立视频权重</text><rect x="716" y="54" width="185" height="112" rx="16" fill="#fbebd7"/><text x="751" y="100">VAE 解码</text><text x="747" y="128">PNG / MP4</text><path d="M187 109 H238 M402 107 L456 52 M402 107 L456 168 M650 52 L716 103 M650 168 L716 116" stroke="#23756c" stroke-width="3" fill="none" marker-end="url(#arrow)"/></svg><figcaption>一条潜空间，两种生成器；尺寸必须在检查点之间一致。</figcaption></figure>
 <h3>怎样判断“做完了”</h3><p>文件存在不是画质合格。最低技术验收是：训练后的权重发生变化；新进程可以加载检查点；生成的 PNG 可被图像库打开；生成的 MP4 有真实 H.264 视频流及目标帧数。画质、文本遵循度和时间连续性必须在服务器上用授权数据另行评估。</p></section><section id="c2" class="chapter"><div class="eyebrow">CHAPTER 02</div><h2>把图片压成潜变量：VAE</h2>
 <p>如果直接对每一个 RGB 像素去噪，计算量随空间大小迅速增加。VAE 先把图片的宽高各缩成四分之一、通道变成四个；去噪网络只处理这个更小的潜空间。推理的最后一步再用同一 VAE 把潜变量翻译回 RGB。</p>
 <p>编码器输出两组值：均值 μ 和对数方差 log σ²。训练时从该分布采样，解码后比较与原图的像素误差；同时用 KL 项防止潜变量分布漂移。<code>损失 = MSE(重建图, 原图) + kl_weight × KL</code>。这里的 <code>kl_weight=0.001</code> 是本项目默认配置，不是普适最优值。</p>
@@ -103,7 +103,7 @@ main{min-width:0;padding:0 max(30px,calc((100vw - 1300px)/2)) 80px 52px}.hero{pa
             latent = alpha_prev.sqrt() * estimate + (1.0 - alpha_prev).sqrt() * predicted  # 执行 eta=0 的确定性 DDIM 更新。
         return latent</code></pre></section><section id="c4" class="chapter"><div class="eyebrow">CHAPTER 04</div><h2>文字条件：能输入词，不等于懂中文</h2>
 <p>文本条件的目的，是让数据里的“红 方块”和图像里的红色方块形成可训练关联。本项目先用空格把一句文本分成短词，再通过 SHA-256 的首字节映射到一个小词表。它只提供稳定索引，不预先理解语义；不同词可能哈希碰撞，训练数据很少时自然无法泛化。</p>
-<p>每个词对应一个可训练向量；所有有效词向量取平均，加上时间向量，送进二维或三维去噪器的中层。扩散训练时默认有概率丢弃条件，用于让模型同时学到有词和无词预测。推理可用 CFG：<code>ε = ε_uncond + guidance × (ε_cond − ε_uncond)</code>。引导系数增加只会放大两种预测的差异；模型没学会对应词时不会凭空长出知识。</p>
+<p>每个词对应一个可训练向量；所有有效词向量取平均，加上时间向量，广播到图像/视频 Transformer 的全部 patch token。扩散训练时默认有概率丢弃条件，用于让模型同时学到有词和无词预测。推理可用 CFG：<code>ε = ε_uncond + guidance × (ε_cond − ε_uncond)</code>。引导系数增加只会放大两种预测的差异；模型没学会对应词时不会凭空长出知识。</p>
 <div class="note"><strong>中文分词提醒：</strong>标注和推理应统一用空格拆词，例如 <code>红 衣 女子</code>，否则整句会成为一个哈希 token。短句、统一词表比堆长提示词更适合这个教学模型。</div>
 <pre class="code"><code>class PromptCondition(nn.Module):  # 轻量哈希词表，仅学习数据集内的文字关联。
     def __init__(self, dim: int):  # 配置条件特征宽度。
@@ -118,51 +118,65 @@ main{min-width:0;padding:0 max(30px,calc((100vw - 1300px)/2)) 80px 52px}.hero{pa
             indices.append(hashed + [0] * (16 - len(hashed)))  # 将不同长度的文本补齐。
         tokens = torch.tensor(indices, dtype=torch.long, device=device)  # 让索引与模型处在同一设备。
         mask = (tokens != 0).unsqueeze(-1)  # 忽略补齐槽位。
-        return (self.table(tokens) * mask).sum(dim=1) / mask.sum(dim=1).clamp(min=1)</code></pre></section><section id="c5" class="chapter"><div class="eyebrow">CHAPTER 05</div><h2>二维与三维去噪器</h2>
-<p>图像潜变量张量是 <code>[B, 4, H/4, W/4]</code>；视频潜变量多一根时间轴，形如 <code>[B, 4, T, H/4, W/4]</code>。<code>B</code> 是批大小，<code>T</code> 是固定帧数。二维卷积观察同一画面的相邻像素；三维卷积的核跨相邻帧，所以能够在训练数据中学习有限的运动变化。</p>
-<p>每个去噪器都有输入层、空间下采样、中层、上采样、跳跃连接和输出层。三维模式的下采样步幅是 <code>(1,2,2)</code>：只压空间，不压时间。网络的输出维度与加噪潜变量完全相同。没有第一帧控制、长程记忆或人物身份专用模块，不要把“时空卷积”说成成熟的视频模型。</p>
-<pre class="code"><code>class _ConditionalUNet(nn.Module):  # 二维或三维共用的紧凑条件去噪器。
-    def __init__(self, video: bool, base: int = 32):  # 用 video 选择时间轴上的卷积模式。
-        super().__init__()  # 注册子网络和训练参数。
-        self.video = video  # 记录模型模式供运行时检查。
-        self.base = base  # 记录通道数供检查点重建。
-        conv = nn.Conv3d if video else nn.Conv2d  # 视频保留显式的帧维度。
-        transpose = nn.ConvTranspose3d if video else nn.ConvTranspose2d  # 为视频和图像选择对应的上采样。
-        kernel = (3, 3, 3) if video else 3  # 视频卷积覆盖相邻帧。
-        padding = (1, 1, 1) if video else 1  # 保持非下采样层的空间尺寸。
-        down_kernel = (1, 4, 4) if video else 4  # 下采样只作用于空间维。
-        down_stride = (1, 2, 2) if video else 2  # 保持视频帧数原样。
-        down_pad = (0, 1, 1) if video else 1  # 使空间尺寸精确减半。
-        self.input = conv(4, base, kernel, padding=padding)  # 提取初始潜变量特征。
-        self.down = conv(base, base * 2, down_kernel, stride=down_stride, padding=down_pad)  # 构建低分辨率分支。
-        self.middle = conv(base * 2, base * 2, kernel, padding=padding)  # 在低分辨率融合邻域信息。
-        self.up = transpose(base * 2, base, down_kernel, stride=down_stride, padding=down_pad)  # 恢复输入的空间尺寸。
-        self.output = conv(base * 2, 4, kernel, padding=padding)  # 拼接跳连后预测同尺寸噪声。
-        self.time = nn.Sequential(nn.Linear(base, base), nn.SiLU(), nn.Linear(base, base))  # 学习时间特征映射。
-        self.text = PromptCondition(base)  # 学习文本和目标画面的数据集内关联。
-        self.condition = nn.Linear(base, base * 2)  # 将文本与时间投影到低分辨率特征。
+        return (self.table(tokens) * mask).sum(dim=1) / mask.sum(dim=1).clamp(min=1)</code></pre></section><section id="c5" class="chapter"><div class="eyebrow">CHAPTER 05</div><h2>图像与视频扩散 Transformer</h2>
+<p>图像潜变量为 <code>[B, 4, H/4, W/4]</code>；视频潜变量为 <code>[B, 4, T, H/4, W/4]</code>。先把每帧的潜变量切成 <code>2×2</code> patch，经可训练投影形成 token，加入位置、扩散时间和文字条件，然后送入两层 Transformer。每层都是真正的多头自注意力、LayerNorm、前馈层和残差连接，不是把卷积网络改名。</p>
+<p>视频模式把 <code>T×(H/8)×(W/8)</code> 个 token 放在同一个自注意力序列里，所以第一帧 token 可以看见最后一帧；图像只有空间 token。最终把 token 还原为噪声张量，交给前章的 DDPM 训练和 DDIM 采样。<strong>Transformer 是噪声预测器，扩散是训练/采样机制：二者共同构成模型。</strong></p>
+<div class="callout">全局注意力的计算和显存随 token 数增长得很快，视频尤其明显。当前只适用于小画幅和短片段；未加入高效注意力、第一帧控制、角色一致性模块或预训练文本编码器。VAE 编解码中的卷积与 DiT 的 patch 投影并不改变去噪主干是 Transformer 的事实。</div>
+<pre class="code"><code>class TransformerBlock(nn.Module):  # 用多头自注意力与前馈网络处理潜空间 patch 序列。
+    def __init__(self, width: int):  # 为小模型固定四个注意力头。
+        super().__init__()  # 注册注意力、归一化和前馈权重。
+        self.attention_norm = nn.LayerNorm(width)  # 保持注意力输入的数值稳定。
+        self.attention = nn.MultiheadAttention(width, num_heads=4, batch_first=True)  # 让每个 token 关注全部时空 token。
+        self.feedforward_norm = nn.LayerNorm(width)  # 为前馈残差分支单独归一化。
+        self.feedforward = nn.Sequential(nn.Linear(width, width * 4), nn.GELU(), nn.Linear(width * 4, width))  # 学习非线性的 token 变换。
 
-    def forward(self, latent: torch.Tensor, timestep: torch.Tensor, prompts: list[str]) -&gt; torch.Tensor:  # 预测潜变量上的噪声。
-        expected_dim = 5 if self.video else 4  # 区分批量视频与批量图片。
-        if latent.ndim != expected_dim or latent.shape[1] != 4:  # 拒绝输入错误的模型格式。
-            raise ValueError(f&quot;预期 {expected_dim} 维且通道为 4 的潜变量&quot;)  # 用中文说明失败原因。
-        if len(prompts) != latent.shape[0] or timestep.numel() != latent.shape[0]:  # 保证条件逐样本对齐。
-            raise ValueError(&quot;提示词、时间步与批大小不一致&quot;)  # 避免条件静默串样。
-        time = self.time(timestep_embedding(timestep, self.base))  # 取得每个样本的扩散时间向量。
-        text = self.text(prompts, latent.device)  # 取得每个样本的文本向量。
-        shape = (-1, self.base * 2, 1, 1, 1) if self.video else (-1, self.base * 2, 1, 1)  # 选择条件广播形状。
-        condition = self.condition(time + text).reshape(shape)  # 把两个条件送入低分辨率特征。
-        skip = F.silu(self.input(latent))  # 缓存高分辨率的局部信息。
-        hidden = F.silu(self.down(skip) + condition)  # 在低分辨率注入条件。
-        hidden = F.silu(self.middle(hidden) + condition)  # 进一步聚合空间或时空上下文。
-        hidden = F.silu(self.up(hidden))  # 还原潜变量空间尺寸。
-        return self.output(torch.cat([hidden, skip], dim=1))</code></pre><pre class="code"><code>class ImageDenoiser(_ConditionalUNet):  # 仅沿二维空间进行扩散预测。
-    def __init__(self, base: int = 32):  # 允许测试和 GPU 训练采用不同网络宽度。
-        super().__init__(video=False, base=base)</code></pre><pre class="code"><code>class VideoDenoiser(_ConditionalUNet):  # 沿时间和二维空间共同预测噪声。
-    def __init__(self, base: int = 32):  # 允许测试和 GPU 训练采用不同网络宽度。
+    def forward(self, tokens: torch.Tensor) -&gt; torch.Tensor:  # 输入与输出都是 [B,N,D]。
+        normalized = self.attention_norm(tokens)  # 在注意力计算前规范化特征。
+        attended, _ = self.attention(normalized, normalized, normalized, need_weights=False)  # 真正执行全局自注意力。
+        tokens = tokens + attended  # 将注意力信息与输入残差相加。
+        return tokens + self.feedforward(self.feedforward_norm(tokens))</code></pre><pre class="code"><code>class _ConditionalDiT(nn.Module):  # 在图像或视频潜变量的 patch token 上执行扩散 Transformer。
+    def __init__(self, video: bool, base: int = 32):  # 图像与视频共享骨干规则但不共享权重。
+        super().__init__()  # 注册本模型的可训练模块。
+        if base &lt; 4 or base % 4:  # 每个注意力头必须得到整数个通道。
+            raise ValueError(&quot;Transformer 宽度 base 必须是至少为 4 的四的倍数&quot;)  # 在创建模型时拦住无效配置。
+        self.video = video  # 记录是否具有显式时间轴。
+        self.base = base  # 保存检查点重建所需的隐藏宽度。
+        kernel = (1, 2, 2) if video else 2  # 每帧切 2×2 patch，时间轴不下采样。
+        conv = nn.Conv3d if video else nn.Conv2d  # 选择视频或图像的 patch 投影算子。
+        unpatch = nn.ConvTranspose3d if video else nn.ConvTranspose2d  # 将 token 网格还原成潜变量。
+        self.input = conv(4, base, kernel, stride=kernel)  # 把四通道潜变量切成可训练 token。
+        self.blocks = nn.Sequential(TransformerBlock(base), TransformerBlock(base))  # 堆叠两层真实自注意力。
+        self.final_norm = nn.LayerNorm(base)  # 解码前规范化每个 token。
+        self.output = unpatch(base, 4, kernel, stride=kernel)  # 还原并预测每个潜变量位置的噪声。
+        self.time = nn.Sequential(nn.Linear(base, base), nn.SiLU(), nn.Linear(base, base))  # 学习扩散时间条件。
+        self.text = PromptCondition(base)  # 复用配对数据训练得到的短词条件。
+        self.condition = nn.Linear(base, base)  # 将时间和文本合成 token 条件。
+
+    def forward(self, latent: torch.Tensor, timestep: torch.Tensor, prompts: list[str]) -&gt; torch.Tensor:  # 从带噪潜变量预测噪声。
+        expected_dim = 5 if self.video else 4  # 视频比图像额外包含一维帧数。
+        if latent.ndim != expected_dim or latent.shape[1] != 4:  # 核对批量和四通道潜变量格式。
+            raise ValueError(f&quot;预期 {expected_dim} 维且通道为 4 的潜变量&quot;)  # 拒绝错误架构输入。
+        if any(length % 2 for length in latent.shape[-2:]):  # 切 2×2 patch 必须能整除宽高。
+            raise ValueError(&quot;潜变量宽高必须是 2 的倍数&quot;)  # 防止输出尺寸与目标噪声不一致。
+        if len(prompts) != latent.shape[0] or timestep.numel() != latent.shape[0]:  # 一条提示词和一个时间步对应一个样本。
+            raise ValueError(&quot;提示词、时间步与批大小不一致&quot;)  # 防止跨样本条件混淆。
+        patches = self.input(latent)  # 把输入投影成 [B,D,(T),h/2,w/2] 网格。
+        grid_shape = patches.shape[2:]  # 记录时空网格形状以便还原。
+        tokens = patches.flatten(2).transpose(1, 2)  # 形成 [B,N,D] 的图像/全视频 token 序列。
+        positions = torch.arange(tokens.shape[1], device=latent.device)  # 为每个时空位置建立固定索引。
+        position = timestep_embedding(positions, self.base).to(tokens.dtype).unsqueeze(0)  # 区分不同 patch 的位置。
+        time = self.time(timestep_embedding(timestep, self.base))  # 计算逐样本扩散时间特征。
+        text = self.text(prompts, latent.device)  # 计算逐样本提示词特征。
+        condition = self.condition(time + text).unsqueeze(1)  # 广播相同条件到该样本的全部 token。
+        tokens = self.blocks(tokens + position + condition)  # 用全局注意力融合不同空间/时间位置。
+        patches = self.final_norm(tokens).transpose(1, 2).reshape(latent.shape[0], self.base, *grid_shape)  # 重建原 token 网格。
+        return self.output(patches)</code></pre><pre class="code"><code>class ImageDenoiser(_ConditionalDiT):  # 在二维潜空间 patch 上进行 Transformer 扩散预测。
+    def __init__(self, base: int = 32):  # 设置可按显存缩放的 Transformer 宽度。
+        super().__init__(video=False, base=base)</code></pre><pre class="code"><code>class VideoDenoiser(_ConditionalDiT):  # 在整段视频时空 patch 上执行自注意力。
+    def __init__(self, base: int = 32):  # 视频宽度与帧数可由调用方控制。
         super().__init__(video=True, base=base)</code></pre></section><section id="c6" class="chapter"><div class="eyebrow">CHAPTER 06</div><h2>准备训练材料</h2>
 <p>把有授权的图片放进 <code>data/images/</code>，MP4 短片放进 <code>data/videos/</code>。同名 UTF-8 <code>.txt</code> 是条件，例如 <code>scene01.mp4</code> 对应 <code>scene01.txt</code>；缺标注会变成空条件。图片和视频帧都先中心裁方，再缩到 VAE 的训练尺寸，像素从 0–255 变到 −1 至 1。</p>
-<p>视频数据集顺序读取真正的帧，再均匀抽出指定 <code>--frames</code> 帧。它不会用一张图片冒充视频；但读取超长源视频会先占用内存，所以服务器数据应先切成数秒短片。视频训练不使用原声音轨，导出的视频也无声；配音、字幕与剪辑属于另一条制作流程。</p>
+<p>视频数据集按元数据计算均匀采样位置，顺序解码真实帧，但只保留目标 <code>--frames</code> 帧，不把整段视频转为张量；源视频仍需逐帧解码，因此服务器数据宜先切成数秒短片。它不会用一张图片冒充视频。视频训练不使用原声音轨，导出的视频也无声；配音、字幕与剪辑属于另一条制作流程。</p>
 <h3>目录示例</h3>
 <pre class="code"><code>data/images/scene01.png
 data/images/scene01.txt
@@ -216,7 +230,7 @@ data/videos/action01.txt</code></pre>
 <pre class="code"><code>python3 -m mini_sd train-vae --data data/smoke/images --steps 1 --size 32 --base 8 --device cpu --out checkpoints/vae.pt
 python3 -m mini_sd train-image --data data/smoke/images --vae checkpoints/vae.pt --steps 1 --base 8 --diffusion-steps 16 --device cpu --out checkpoints/image.pt
 python3 -m mini_sd train-video --data data/smoke/videos --vae checkpoints/vae.pt --steps 1 --base 8 --frames 4 --diffusion-steps 16 --device cpu --out checkpoints/video.pt</code></pre>
-<p>检查点包含模型权重、优化器状态、网络宽度、图像尺寸、训练扩散步数和累计更新步数；视频权重还保存帧数。中断后可通过 <code>--resume</code> 延续已有检查点，例如把下一段 <code>--steps 100</code> 继续追加到同一类型的模型。恢复时需要保持对应的尺寸、网络宽度和扩散时间表不变。当前版本只恢复权重/优化器/步数，不保存每个数据加载器和随机数生成器状态，因此不能保证逐位重放训练轨迹。</p>
+<p>检查点包含模型权重、优化器状态、网络宽度、图像尺寸、训练扩散步数和累计更新步数；图像/视频检查点还保存 <code>architecture=dit-v1</code>，视频额外保存帧数。旧版卷积去噪检查点不兼容，须重新训练；原 VAE 结构不变可继续使用。中断后可通过 <code>--resume</code> 延续同架构检查点。恢复时必须保持尺寸、宽度和扩散时间表不变。当前版本只恢复权重/优化器/步数，不保存数据加载器或随机数状态，不能逐位重放训练轨迹。</p>
 <div class="callout">一次更新的数值损失只能证明梯度路径工作；判断画质必须看训练多步的独立验证集和逐帧视频结果。不要把烟测输出当成“生成能力已训成”。</div></section><section id="c8" class="chapter"><div class="eyebrow">CHAPTER 08</div><h2>第二遍推理：图片与视频</h2>
 <p>推理从随机潜变量开始，使用图像或视频各自的去噪器进行 DDIM 采样，再让 VAE 解码。图像输出 PNG；视频把真实生成的连续帧交给 FFmpeg，编码 H.264/yuv420p 的无声 MP4。</p>
 <pre class="code"><code>python3 -m mini_sd sample-image --vae checkpoints/vae.pt --model checkpoints/image.pt --prompt &#x27;红 方块&#x27; --sample-steps 2 --seed 7 --device cpu --out outputs/sample.png
@@ -225,7 +239,7 @@ ffprobe -v error -count_frames -show_entries stream=codec_name,nb_read_frames,wi
 <p>模型检查点限制采样尺寸，视频检查点还限制帧数；不能只改导出参数就让模型无代价生成长片。<code>--guidance</code> 可以显式设置大于 1 的 CFG，但至少要先在真实标注数据上训练，且仍需看成片。媒体编码器不可用会直接报错，不会伪装生成成功。</p>
 <h3>完整调用链走读</h3><ol><li>CLI 从检查点读取 <code>kind</code>，拒绝把 image 权重塞进 video 命令。</li><li>读取网络宽度、VAE 尺寸及扩散时间表；新建同结构网络并载入权重。</li><li>随机噪声变成图片潜变量或 <code>[1,4,T,h,w]</code> 视频潜变量，按 DDIM 反向迭代。</li><li>视频潜变量拆成逐帧图像潜变量，交给共享 VAE 解码；随后送往 FFmpeg。</li><li>独立工具重新打开 PNG/MP4；能播放是技术通过，不是审美通过。</li></ol></section><section id="c9" class="chapter"><div class="eyebrow">CHAPTER 09</div><h2>明天在服务器上怎么开工</h2>
 <p>服务器还未开启，因此本章是**操作顺序**，不是已验证的 GPU 性能报告。先确认操作系统、显卡型号和显存、驱动、CUDA 对应的 PyTorch，再检查 <code>ffmpeg</code>、Python 和可用磁盘。不要照抄陌生整合包或为教程临时拉满卡。</p>
-<ol class="steps"><li><strong>建立隔离环境。</strong>用 Python 3.10+ 创建虚拟环境；先按官方指引安装与服务器驱动相符的 PyTorch CUDA 轮子，再在仓库根目录安装本项目。<code>torch.cuda.is_available()</code> 必须为真。</li><li><strong>跑单步技术烟测。</strong>先用几何素材跑三种检查点与两个输出，<code>ffprobe</code> 验证真实帧数。若 CUDA OOM，先把批次设为 1、尺寸退回 32、视频帧数退回 4。</li><li><strong>接授权素材。</strong>按目录与同名 txt 规则准备短图/短片；先核对画面版权、帧率、静音情况和标注语义。分训练与验证素材，避免只看训练数据。</li><li><strong>先做 VAE 验证。</strong>检查重建图再决定是否扩大尺寸；重建基础差则继续训练 VAE，不能靠扩散参数弥补。</li><li><strong>再训练图像与视频模型。</strong>记录 GPU 峰值、每步耗时、损失曲线和固定种子的输出对照；仅当一个小试验可信时才扩大样本/步数。每次中断用 <code>--resume</code>，并保留原检查点副本。</li><li><strong>独立审片。</strong>真正打开最终图像/视频，核角色、服装、动作连续性、闪烁、时长与画幅；不足就报告“不合格”，不要用“已导出”代替。</li></ol>
+<ol class="steps"><li><strong>建立隔离环境。</strong>用 Python 3.10+ 创建虚拟环境；先按官方指引安装与服务器驱动相符的 PyTorch CUDA 轮子，再在仓库根目录安装本项目。<code>torch.cuda.is_available()</code> 必须为真。</li><li><strong>跑单步技术烟测。</strong>先用几何素材跑三种检查点与两个输出，<code>ffprobe</code> 验证真实帧数。若 CUDA OOM，先把批次设为 1、尺寸退回 32、视频帧数退回 4；DiT 注意力尤其要控制总 token 数。</li><li><strong>接授权素材。</strong>按目录与同名 txt 规则准备短图/短片；先核对画面版权、帧率、静音情况和标注语义。分训练与验证素材，避免只看训练数据。</li><li><strong>先做 VAE 验证。</strong>检查重建图再决定是否扩大尺寸；重建基础差则继续训练 VAE，不能靠扩散参数弥补。</li><li><strong>再训练图像与视频模型。</strong>记录 GPU 峰值、每步耗时、损失曲线和固定种子的输出对照；仅当一个小试验可信时才扩大样本/步数。每次中断用 <code>--resume</code>，并保留原检查点副本。</li><li><strong>独立审片。</strong>真正打开最终图像/视频，核角色、服装、动作连续性、闪烁、时长与画幅；不足就报告“不合格”，不要用“已导出”代替。</li></ol>
 <div class="note"><strong>GPU 参数留白：</strong>服务器的显存、驱动和数据量未知，书中不编造训练小时数、最大分辨率或商业画质。当前版本也不包含混合精度、分布式、数据流式读取或高级文本编码器。</div></section><section id="c10" class="chapter"><div class="eyebrow">CHAPTER 10</div><h2>故障排查与限制</h2>
 <table><thead><tr><th>现象</th><th>先核实</th><th>处理边界</th></tr></thead><tbody>
 <tr><td>看起来像噪声</td><td>是否只训练一两步；VAE 能否重建授权训练图</td><td>先提高真实训练量；不承诺短时间得到人物质量</td></tr>
@@ -237,7 +251,7 @@ ffprobe -v error -count_frames -show_entries stream=codec_name,nb_read_frames,wi
 <tr><td>MP4 无法编码</td><td>FFmpeg 是否包含 libx264</td><td>安装可信 FFmpeg 或明确报阻塞，禁写空文件</td></tr>
 </tbody></table><p>本项目专注教学与明天的服务器实验，既没有从 H3/SD 权重迁移，也没有训练角色 LoRA、RefMod 或把生成的短片剪成完整作品。下个阶段是否接现成高质量模型，应以用户新的明确方向决定。</p></section><section id="c11" class="chapter"><div class="eyebrow">CHAPTER 11</div><h2>完整源码与练习</h2>
 <p>前文依次讲了模型、噪声、数据与命令。下面四份代码是构建时从当前项目原文嵌入的完整实现，不是另写的伪代码。阅读路线：先读 <code>models.py</code> 看张量形状，再读 <code>diffusion.py</code> 看训练/采样，随后读 <code>data.py</code> 看真实媒体，最后在 <code>__main__.py</code> 串起 CLI 到输出文件。</p>
-<p><strong>练习 A：</strong>保持数据集和种子不变，只增加训练步数，比较固定提示词输出；先记录 VAE 重建结果，再看生成结果。<strong>练习 B：</strong>把运动短片变成方向相反的两组标注，观察三维卷积是否能学习方向变化。<strong>练习 C：</strong>让图片标注中的中文不加空格，再用分词后的提示词推理，解释为什么输出可能不符合文字。</p>
+<p><strong>练习 A：</strong>保持数据集和种子不变，只增加训练步数，比较固定提示词输出；先记录 VAE 重建结果，再看生成结果。<strong>练习 B：</strong>固定提示词，改变视频末帧的潜变量，观察全局注意力如何影响第一帧的预测。<strong>练习 C：</strong>让图片标注中的中文不加空格，再用分词后的提示词推理，解释为什么输出可能不符合文字。</p>
 <details class="source"><summary>mini_sd/models.py · 完整源码</summary><pre class="code"><code>&quot;&quot;&quot;轻量 VAE 与图像/视频去噪网络：所有权重均从零初始化。&quot;&quot;&quot;
 
 import hashlib  # 使用稳定摘要将短文本映射到可训练的词表索引。
@@ -304,52 +318,68 @@ class PromptCondition(nn.Module):  # 轻量哈希词表，仅学习数据集内�
         return (self.table(tokens) * mask).sum(dim=1) / mask.sum(dim=1).clamp(min=1)  # 对真实词取平均。
 
 
-class _ConditionalUNet(nn.Module):  # 二维或三维共用的紧凑条件去噪器。
-    def __init__(self, video: bool, base: int = 32):  # 用 video 选择时间轴上的卷积模式。
-        super().__init__()  # 注册子网络和训练参数。
-        self.video = video  # 记录模型模式供运行时检查。
-        self.base = base  # 记录通道数供检查点重建。
-        conv = nn.Conv3d if video else nn.Conv2d  # 视频保留显式的帧维度。
-        transpose = nn.ConvTranspose3d if video else nn.ConvTranspose2d  # 为视频和图像选择对应的上采样。
-        kernel = (3, 3, 3) if video else 3  # 视频卷积覆盖相邻帧。
-        padding = (1, 1, 1) if video else 1  # 保持非下采样层的空间尺寸。
-        down_kernel = (1, 4, 4) if video else 4  # 下采样只作用于空间维。
-        down_stride = (1, 2, 2) if video else 2  # 保持视频帧数原样。
-        down_pad = (0, 1, 1) if video else 1  # 使空间尺寸精确减半。
-        self.input = conv(4, base, kernel, padding=padding)  # 提取初始潜变量特征。
-        self.down = conv(base, base * 2, down_kernel, stride=down_stride, padding=down_pad)  # 构建低分辨率分支。
-        self.middle = conv(base * 2, base * 2, kernel, padding=padding)  # 在低分辨率融合邻域信息。
-        self.up = transpose(base * 2, base, down_kernel, stride=down_stride, padding=down_pad)  # 恢复输入的空间尺寸。
-        self.output = conv(base * 2, 4, kernel, padding=padding)  # 拼接跳连后预测同尺寸噪声。
-        self.time = nn.Sequential(nn.Linear(base, base), nn.SiLU(), nn.Linear(base, base))  # 学习时间特征映射。
-        self.text = PromptCondition(base)  # 学习文本和目标画面的数据集内关联。
-        self.condition = nn.Linear(base, base * 2)  # 将文本与时间投影到低分辨率特征。
+class TransformerBlock(nn.Module):  # 用多头自注意力与前馈网络处理潜空间 patch 序列。
+    def __init__(self, width: int):  # 为小模型固定四个注意力头。
+        super().__init__()  # 注册注意力、归一化和前馈权重。
+        self.attention_norm = nn.LayerNorm(width)  # 保持注意力输入的数值稳定。
+        self.attention = nn.MultiheadAttention(width, num_heads=4, batch_first=True)  # 让每个 token 关注全部时空 token。
+        self.feedforward_norm = nn.LayerNorm(width)  # 为前馈残差分支单独归一化。
+        self.feedforward = nn.Sequential(nn.Linear(width, width * 4), nn.GELU(), nn.Linear(width * 4, width))  # 学习非线性的 token 变换。
 
-    def forward(self, latent: torch.Tensor, timestep: torch.Tensor, prompts: list[str]) -&gt; torch.Tensor:  # 预测潜变量上的噪声。
-        expected_dim = 5 if self.video else 4  # 区分批量视频与批量图片。
-        if latent.ndim != expected_dim or latent.shape[1] != 4:  # 拒绝输入错误的模型格式。
-            raise ValueError(f&quot;预期 {expected_dim} 维且通道为 4 的潜变量&quot;)  # 用中文说明失败原因。
-        if len(prompts) != latent.shape[0] or timestep.numel() != latent.shape[0]:  # 保证条件逐样本对齐。
-            raise ValueError(&quot;提示词、时间步与批大小不一致&quot;)  # 避免条件静默串样。
-        time = self.time(timestep_embedding(timestep, self.base))  # 取得每个样本的扩散时间向量。
-        text = self.text(prompts, latent.device)  # 取得每个样本的文本向量。
-        shape = (-1, self.base * 2, 1, 1, 1) if self.video else (-1, self.base * 2, 1, 1)  # 选择条件广播形状。
-        condition = self.condition(time + text).reshape(shape)  # 把两个条件送入低分辨率特征。
-        skip = F.silu(self.input(latent))  # 缓存高分辨率的局部信息。
-        hidden = F.silu(self.down(skip) + condition)  # 在低分辨率注入条件。
-        hidden = F.silu(self.middle(hidden) + condition)  # 进一步聚合空间或时空上下文。
-        hidden = F.silu(self.up(hidden))  # 还原潜变量空间尺寸。
-        return self.output(torch.cat([hidden, skip], dim=1))  # 输出真实网络预测的噪声。
+    def forward(self, tokens: torch.Tensor) -&gt; torch.Tensor:  # 输入与输出都是 [B,N,D]。
+        normalized = self.attention_norm(tokens)  # 在注意力计算前规范化特征。
+        attended, _ = self.attention(normalized, normalized, normalized, need_weights=False)  # 真正执行全局自注意力。
+        tokens = tokens + attended  # 将注意力信息与输入残差相加。
+        return tokens + self.feedforward(self.feedforward_norm(tokens))  # 再通过前馈残差变换。
 
 
-class ImageDenoiser(_ConditionalUNet):  # 仅沿二维空间进行扩散预测。
-    def __init__(self, base: int = 32):  # 允许测试和 GPU 训练采用不同网络宽度。
-        super().__init__(video=False, base=base)  # 初始化二维卷积分支。
+class _ConditionalDiT(nn.Module):  # 在图像或视频潜变量的 patch token 上执行扩散 Transformer。
+    def __init__(self, video: bool, base: int = 32):  # 图像与视频共享骨干规则但不共享权重。
+        super().__init__()  # 注册本模型的可训练模块。
+        if base &lt; 4 or base % 4:  # 每个注意力头必须得到整数个通道。
+            raise ValueError(&quot;Transformer 宽度 base 必须是至少为 4 的四的倍数&quot;)  # 在创建模型时拦住无效配置。
+        self.video = video  # 记录是否具有显式时间轴。
+        self.base = base  # 保存检查点重建所需的隐藏宽度。
+        kernel = (1, 2, 2) if video else 2  # 每帧切 2×2 patch，时间轴不下采样。
+        conv = nn.Conv3d if video else nn.Conv2d  # 选择视频或图像的 patch 投影算子。
+        unpatch = nn.ConvTranspose3d if video else nn.ConvTranspose2d  # 将 token 网格还原成潜变量。
+        self.input = conv(4, base, kernel, stride=kernel)  # 把四通道潜变量切成可训练 token。
+        self.blocks = nn.Sequential(TransformerBlock(base), TransformerBlock(base))  # 堆叠两层真实自注意力。
+        self.final_norm = nn.LayerNorm(base)  # 解码前规范化每个 token。
+        self.output = unpatch(base, 4, kernel, stride=kernel)  # 还原并预测每个潜变量位置的噪声。
+        self.time = nn.Sequential(nn.Linear(base, base), nn.SiLU(), nn.Linear(base, base))  # 学习扩散时间条件。
+        self.text = PromptCondition(base)  # 复用配对数据训练得到的短词条件。
+        self.condition = nn.Linear(base, base)  # 将时间和文本合成 token 条件。
+
+    def forward(self, latent: torch.Tensor, timestep: torch.Tensor, prompts: list[str]) -&gt; torch.Tensor:  # 从带噪潜变量预测噪声。
+        expected_dim = 5 if self.video else 4  # 视频比图像额外包含一维帧数。
+        if latent.ndim != expected_dim or latent.shape[1] != 4:  # 核对批量和四通道潜变量格式。
+            raise ValueError(f&quot;预期 {expected_dim} 维且通道为 4 的潜变量&quot;)  # 拒绝错误架构输入。
+        if any(length % 2 for length in latent.shape[-2:]):  # 切 2×2 patch 必须能整除宽高。
+            raise ValueError(&quot;潜变量宽高必须是 2 的倍数&quot;)  # 防止输出尺寸与目标噪声不一致。
+        if len(prompts) != latent.shape[0] or timestep.numel() != latent.shape[0]:  # 一条提示词和一个时间步对应一个样本。
+            raise ValueError(&quot;提示词、时间步与批大小不一致&quot;)  # 防止跨样本条件混淆。
+        patches = self.input(latent)  # 把输入投影成 [B,D,(T),h/2,w/2] 网格。
+        grid_shape = patches.shape[2:]  # 记录时空网格形状以便还原。
+        tokens = patches.flatten(2).transpose(1, 2)  # 形成 [B,N,D] 的图像/全视频 token 序列。
+        positions = torch.arange(tokens.shape[1], device=latent.device)  # 为每个时空位置建立固定索引。
+        position = timestep_embedding(positions, self.base).to(tokens.dtype).unsqueeze(0)  # 区分不同 patch 的位置。
+        time = self.time(timestep_embedding(timestep, self.base))  # 计算逐样本扩散时间特征。
+        text = self.text(prompts, latent.device)  # 计算逐样本提示词特征。
+        condition = self.condition(time + text).unsqueeze(1)  # 广播相同条件到该样本的全部 token。
+        tokens = self.blocks(tokens + position + condition)  # 用全局注意力融合不同空间/时间位置。
+        patches = self.final_norm(tokens).transpose(1, 2).reshape(latent.shape[0], self.base, *grid_shape)  # 重建原 token 网格。
+        return self.output(patches)  # 输出与带噪潜变量同形状的噪声预测。
 
 
-class VideoDenoiser(_ConditionalUNet):  # 沿时间和二维空间共同预测噪声。
-    def __init__(self, base: int = 32):  # 允许测试和 GPU 训练采用不同网络宽度。
-        super().__init__(video=True, base=base)  # 初始化三维时空卷积分支。
+class ImageDenoiser(_ConditionalDiT):  # 在二维潜空间 patch 上进行 Transformer 扩散预测。
+    def __init__(self, base: int = 32):  # 设置可按显存缩放的 Transformer 宽度。
+        super().__init__(video=False, base=base)  # 创建图像专用权重。
+
+
+class VideoDenoiser(_ConditionalDiT):  # 在整段视频时空 patch 上执行自注意力。
+    def __init__(self, base: int = 32):  # 视频宽度与帧数可由调用方控制。
+        super().__init__(video=True, base=base)  # 创建独立于图像模型的视频权重。
 </code></pre></details><details class="source"><summary>mini_sd/diffusion.py · 完整源码</summary><pre class="code"><code>&quot;&quot;&quot;DDPM 噪声学习与 DDIM 无随机反向采样。&quot;&quot;&quot;
 
 import torch  # 提供随机采样、张量运算和梯度能力。
@@ -529,6 +559,8 @@ def _load(path: str, kind: str) -&gt; dict:  # 仅加载本项目可信的检查
     checkpoint = torch.load(path, map_location=&quot;cpu&quot;, weights_only=True)  # 禁用普通 pickle 对象反序列化。
     if not isinstance(checkpoint, dict) or checkpoint.get(&quot;kind&quot;) != kind:  # 检查不同模型的权重没有被混用。
         raise ValueError(f&quot;检查点不是 {kind}：{path}&quot;)  # 阻止图像权重当成视频权重。
+    if kind in (&quot;image&quot;, &quot;video&quot;) and checkpoint.get(&quot;architecture&quot;) != &quot;dit-v1&quot;:  # 拒绝旧卷积权重和未知的去噪骨干。
+        raise ValueError(f&quot;旧版卷积检查点或架构不兼容，请重新训练 {kind}：{path}&quot;)  # 旧 VAE 仍可复用。
     return checkpoint  # 返回可复原的纯数据字典。
 
 
@@ -556,8 +588,8 @@ def _next_batches(loader):  # 为有限步数训练循环供给数据。
             yield batch  # 交还一个真实媒体批次。
 
 
-def _validate_size(size: int) -&gt; None:  # 保证 VAE 和 UNet 都能整除空间尺寸。
-    if size &lt; 16 or size % 8:  # 两次 VAE 与一次 UNet 下采样合计要求八倍对齐。
+def _validate_size(size: int) -&gt; None:  # 保证 VAE 和 DiT patch 都能整除空间尺寸。
+    if size &lt; 16 or size % 8:  # 两次 VAE 压缩和 2×2 patch 切分合计要求八倍对齐。
         raise ValueError(&quot;训练尺寸至少为 16，且必须是 8 的倍数&quot;)  # 让配置错误在训练前暴露。
 
 
@@ -630,7 +662,7 @@ def train_diffusion(args, video: bool) -&gt; None:  # 为图像和视频训练�
         loss = schedule.train_step(model, latent, prompts, optimizer)  # 执行实际噪声预测梯度更新。
         if local_step % max(1, args.steps // 20) == 0:  # 定期反馈可验证训练进度。
             print(f&quot;{kind} 步数 {finished + local_step + 1}，噪声损失 {loss:.5f}&quot;, flush=True)  # 不将损失当成画质指标。
-    payload = {&quot;kind&quot;: kind, &quot;size&quot;: size, &quot;base&quot;: args.base, &quot;diffusion_steps&quot;: args.diffusion_steps, &quot;model&quot;: model.state_dict(), &quot;optimizer&quot;: optimizer.state_dict(), &quot;step&quot;: finished + args.steps}  # 封装完整恢复信息。
+    payload = {&quot;kind&quot;: kind, &quot;architecture&quot;: &quot;dit-v1&quot;, &quot;size&quot;: size, &quot;base&quot;: args.base, &quot;diffusion_steps&quot;: args.diffusion_steps, &quot;model&quot;: model.state_dict(), &quot;optimizer&quot;: optimizer.state_dict(), &quot;step&quot;: finished + args.steps}  # 显式标记 Transformer 权重结构并保存恢复信息。
     if video:  # 视频权重需记录固定推理帧数。
         payload[&quot;frames&quot;] = args.frames  # 保证训练与推理时序一致。
     _save(args.out, payload)  # 原子保存已训练的模型检查点。

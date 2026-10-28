@@ -64,49 +64,65 @@ class PromptCondition(nn.Module):  # 轻量哈希词表，仅学习数据集内�
         return (self.table(tokens) * mask).sum(dim=1) / mask.sum(dim=1).clamp(min=1)  # 对真实词取平均。
 
 
-class _ConditionalUNet(nn.Module):  # 二维或三维共用的紧凑条件去噪器。
-    def __init__(self, video: bool, base: int = 32):  # 用 video 选择时间轴上的卷积模式。
-        super().__init__()  # 注册子网络和训练参数。
-        self.video = video  # 记录模型模式供运行时检查。
-        self.base = base  # 记录通道数供检查点重建。
-        conv = nn.Conv3d if video else nn.Conv2d  # 视频保留显式的帧维度。
-        transpose = nn.ConvTranspose3d if video else nn.ConvTranspose2d  # 为视频和图像选择对应的上采样。
-        kernel = (3, 3, 3) if video else 3  # 视频卷积覆盖相邻帧。
-        padding = (1, 1, 1) if video else 1  # 保持非下采样层的空间尺寸。
-        down_kernel = (1, 4, 4) if video else 4  # 下采样只作用于空间维。
-        down_stride = (1, 2, 2) if video else 2  # 保持视频帧数原样。
-        down_pad = (0, 1, 1) if video else 1  # 使空间尺寸精确减半。
-        self.input = conv(4, base, kernel, padding=padding)  # 提取初始潜变量特征。
-        self.down = conv(base, base * 2, down_kernel, stride=down_stride, padding=down_pad)  # 构建低分辨率分支。
-        self.middle = conv(base * 2, base * 2, kernel, padding=padding)  # 在低分辨率融合邻域信息。
-        self.up = transpose(base * 2, base, down_kernel, stride=down_stride, padding=down_pad)  # 恢复输入的空间尺寸。
-        self.output = conv(base * 2, 4, kernel, padding=padding)  # 拼接跳连后预测同尺寸噪声。
-        self.time = nn.Sequential(nn.Linear(base, base), nn.SiLU(), nn.Linear(base, base))  # 学习时间特征映射。
-        self.text = PromptCondition(base)  # 学习文本和目标画面的数据集内关联。
-        self.condition = nn.Linear(base, base * 2)  # 将文本与时间投影到低分辨率特征。
+class TransformerBlock(nn.Module):  # 用多头自注意力与前馈网络处理潜空间 patch 序列。
+    def __init__(self, width: int):  # 为小模型固定四个注意力头。
+        super().__init__()  # 注册注意力、归一化和前馈权重。
+        self.attention_norm = nn.LayerNorm(width)  # 保持注意力输入的数值稳定。
+        self.attention = nn.MultiheadAttention(width, num_heads=4, batch_first=True)  # 让每个 token 关注全部时空 token。
+        self.feedforward_norm = nn.LayerNorm(width)  # 为前馈残差分支单独归一化。
+        self.feedforward = nn.Sequential(nn.Linear(width, width * 4), nn.GELU(), nn.Linear(width * 4, width))  # 学习非线性的 token 变换。
 
-    def forward(self, latent: torch.Tensor, timestep: torch.Tensor, prompts: list[str]) -> torch.Tensor:  # 预测潜变量上的噪声。
-        expected_dim = 5 if self.video else 4  # 区分批量视频与批量图片。
-        if latent.ndim != expected_dim or latent.shape[1] != 4:  # 拒绝输入错误的模型格式。
-            raise ValueError(f"预期 {expected_dim} 维且通道为 4 的潜变量")  # 用中文说明失败原因。
-        if len(prompts) != latent.shape[0] or timestep.numel() != latent.shape[0]:  # 保证条件逐样本对齐。
-            raise ValueError("提示词、时间步与批大小不一致")  # 避免条件静默串样。
-        time = self.time(timestep_embedding(timestep, self.base))  # 取得每个样本的扩散时间向量。
-        text = self.text(prompts, latent.device)  # 取得每个样本的文本向量。
-        shape = (-1, self.base * 2, 1, 1, 1) if self.video else (-1, self.base * 2, 1, 1)  # 选择条件广播形状。
-        condition = self.condition(time + text).reshape(shape)  # 把两个条件送入低分辨率特征。
-        skip = F.silu(self.input(latent))  # 缓存高分辨率的局部信息。
-        hidden = F.silu(self.down(skip) + condition)  # 在低分辨率注入条件。
-        hidden = F.silu(self.middle(hidden) + condition)  # 进一步聚合空间或时空上下文。
-        hidden = F.silu(self.up(hidden))  # 还原潜变量空间尺寸。
-        return self.output(torch.cat([hidden, skip], dim=1))  # 输出真实网络预测的噪声。
+    def forward(self, tokens: torch.Tensor) -> torch.Tensor:  # 输入与输出都是 [B,N,D]。
+        normalized = self.attention_norm(tokens)  # 在注意力计算前规范化特征。
+        attended, _ = self.attention(normalized, normalized, normalized, need_weights=False)  # 真正执行全局自注意力。
+        tokens = tokens + attended  # 将注意力信息与输入残差相加。
+        return tokens + self.feedforward(self.feedforward_norm(tokens))  # 再通过前馈残差变换。
 
 
-class ImageDenoiser(_ConditionalUNet):  # 仅沿二维空间进行扩散预测。
-    def __init__(self, base: int = 32):  # 允许测试和 GPU 训练采用不同网络宽度。
-        super().__init__(video=False, base=base)  # 初始化二维卷积分支。
+class _ConditionalDiT(nn.Module):  # 在图像或视频潜变量的 patch token 上执行扩散 Transformer。
+    def __init__(self, video: bool, base: int = 32):  # 图像与视频共享骨干规则但不共享权重。
+        super().__init__()  # 注册本模型的可训练模块。
+        if base < 4 or base % 4:  # 每个注意力头必须得到整数个通道。
+            raise ValueError("Transformer 宽度 base 必须是至少为 4 的四的倍数")  # 在创建模型时拦住无效配置。
+        self.video = video  # 记录是否具有显式时间轴。
+        self.base = base  # 保存检查点重建所需的隐藏宽度。
+        kernel = (1, 2, 2) if video else 2  # 每帧切 2×2 patch，时间轴不下采样。
+        conv = nn.Conv3d if video else nn.Conv2d  # 选择视频或图像的 patch 投影算子。
+        unpatch = nn.ConvTranspose3d if video else nn.ConvTranspose2d  # 将 token 网格还原成潜变量。
+        self.input = conv(4, base, kernel, stride=kernel)  # 把四通道潜变量切成可训练 token。
+        self.blocks = nn.Sequential(TransformerBlock(base), TransformerBlock(base))  # 堆叠两层真实自注意力。
+        self.final_norm = nn.LayerNorm(base)  # 解码前规范化每个 token。
+        self.output = unpatch(base, 4, kernel, stride=kernel)  # 还原并预测每个潜变量位置的噪声。
+        self.time = nn.Sequential(nn.Linear(base, base), nn.SiLU(), nn.Linear(base, base))  # 学习扩散时间条件。
+        self.text = PromptCondition(base)  # 复用配对数据训练得到的短词条件。
+        self.condition = nn.Linear(base, base)  # 将时间和文本合成 token 条件。
+
+    def forward(self, latent: torch.Tensor, timestep: torch.Tensor, prompts: list[str]) -> torch.Tensor:  # 从带噪潜变量预测噪声。
+        expected_dim = 5 if self.video else 4  # 视频比图像额外包含一维帧数。
+        if latent.ndim != expected_dim or latent.shape[1] != 4:  # 核对批量和四通道潜变量格式。
+            raise ValueError(f"预期 {expected_dim} 维且通道为 4 的潜变量")  # 拒绝错误架构输入。
+        if any(length % 2 for length in latent.shape[-2:]):  # 切 2×2 patch 必须能整除宽高。
+            raise ValueError("潜变量宽高必须是 2 的倍数")  # 防止输出尺寸与目标噪声不一致。
+        if len(prompts) != latent.shape[0] or timestep.numel() != latent.shape[0]:  # 一条提示词和一个时间步对应一个样本。
+            raise ValueError("提示词、时间步与批大小不一致")  # 防止跨样本条件混淆。
+        patches = self.input(latent)  # 把输入投影成 [B,D,(T),h/2,w/2] 网格。
+        grid_shape = patches.shape[2:]  # 记录时空网格形状以便还原。
+        tokens = patches.flatten(2).transpose(1, 2)  # 形成 [B,N,D] 的图像/全视频 token 序列。
+        positions = torch.arange(tokens.shape[1], device=latent.device)  # 为每个时空位置建立固定索引。
+        position = timestep_embedding(positions, self.base).to(tokens.dtype).unsqueeze(0)  # 区分不同 patch 的位置。
+        time = self.time(timestep_embedding(timestep, self.base))  # 计算逐样本扩散时间特征。
+        text = self.text(prompts, latent.device)  # 计算逐样本提示词特征。
+        condition = self.condition(time + text).unsqueeze(1)  # 广播相同条件到该样本的全部 token。
+        tokens = self.blocks(tokens + position + condition)  # 用全局注意力融合不同空间/时间位置。
+        patches = self.final_norm(tokens).transpose(1, 2).reshape(latent.shape[0], self.base, *grid_shape)  # 重建原 token 网格。
+        return self.output(patches)  # 输出与带噪潜变量同形状的噪声预测。
 
 
-class VideoDenoiser(_ConditionalUNet):  # 沿时间和二维空间共同预测噪声。
-    def __init__(self, base: int = 32):  # 允许测试和 GPU 训练采用不同网络宽度。
-        super().__init__(video=True, base=base)  # 初始化三维时空卷积分支。
+class ImageDenoiser(_ConditionalDiT):  # 在二维潜空间 patch 上进行 Transformer 扩散预测。
+    def __init__(self, base: int = 32):  # 设置可按显存缩放的 Transformer 宽度。
+        super().__init__(video=False, base=base)  # 创建图像专用权重。
+
+
+class VideoDenoiser(_ConditionalDiT):  # 在整段视频时空 patch 上执行自注意力。
+    def __init__(self, base: int = 32):  # 视频宽度与帧数可由调用方控制。
+        super().__init__(video=True, base=base)  # 创建独立于图像模型的视频权重。
