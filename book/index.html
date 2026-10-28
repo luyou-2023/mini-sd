@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mini SD Lab｜从零训练图像与视频扩散模型</title><style>
+:root{--bg:#f7f6f2;--paper:#fff;--ink:#1b2b2b;--soft:#566b69;--line:#dce4df;--accent:#176e62;--cream:#fff5e5}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.85 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+a{color:var(--accent)}.layout{display:grid;grid-template-columns:264px minmax(0,1fr);min-height:100vh}nav{position:sticky;top:0;height:100vh;overflow:auto;padding:34px 17px 24px 25px;background:#eaf0e9;border-right:1px solid var(--line)}nav .brand{display:block;font-weight:800;letter-spacing:.04em;font-size:19px;color:var(--ink);margin:0 0 4px}nav .sub{font-size:12px;color:var(--soft);margin:0 0 32px}nav a{display:flex;gap:12px;align-items:center;padding:9px 10px;margin:2px 0;border-radius:7px;color:#334742;text-decoration:none;font-size:13px;line-height:1.45}nav a:hover,nav a:focus{background:#dbe9e0;color:#114e44}nav a span{color:var(--accent);font-size:11px;font-weight:700}
+main{min-width:0;padding:0 max(30px,calc((100vw - 1300px)/2)) 80px 52px}.hero{padding:70px 0 67px;border-bottom:1px solid var(--line)}.kicker,.eyebrow{font-size:12px;font-weight:800;letter-spacing:.15em;color:var(--accent)}h1{font-size:clamp(37px,5vw,63px);line-height:1.12;letter-spacing:-.05em;margin:17px 0 15px}h2{font-size:clamp(27px,3vw,38px);letter-spacing:-.04em;line-height:1.25;margin:8px 0 25px}h3{font-size:21px;line-height:1.4;margin:36px 0 12px}p{margin:15px 0;color:#2b3d3a}.hero .intro{font-size:20px;max-width:800px;color:#41534d}.hero .meta{color:var(--soft);font-size:14px;margin-top:30px}.chapter{padding:56px 0 62px;border-bottom:1px solid var(--line);max-width:1050px}.lead{font-size:21px;color:#26433a}.note,.callout{padding:20px 24px;border-radius:10px;border:1px solid #cbded5;background:#eaf4ec;margin:25px 0;color:#234138}.callout{background:var(--cream);border-color:#ecd8b8;color:#604b29}.diagram{width:100%;margin:30px 0;padding:22px;background:white;border:1px solid var(--line);border-radius:12px}.diagram svg{display:block;width:100%;height:auto}.diagram text{font-family:inherit;font-size:16px;fill:#24483f}.diagram figcaption{font-size:13px;color:var(--soft);margin:12px 0 0}.formula{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:white;border:1px solid var(--line);border-radius:10px;padding:18px;margin:28px 0}.formula span{background:#e7f1ea;border-radius:6px;padding:6px 10px}.formula b{font-size:12px;color:var(--accent)}code,pre{font-family:SFMono-Regular,Consolas,Menlo,monospace}p code,li code,td code{font-size:.82em;background:#edf2ec;padding:2px 5px;border-radius:4px;word-break:break-all}.code{background:#f8fafc;color:#172033;border:1px solid #cbd5e1;padding:19px 22px;border-radius:9px;overflow:auto;max-width:100%;font-size:12px;line-height:1.65;white-space:pre;tab-size:4}.code code{background:none;padding:0}.source{border:1px solid var(--line);background:white;border-radius:10px;margin:15px 0;overflow:hidden}.source summary{cursor:pointer;padding:13px 18px;font-size:14px;font-weight:700;color:var(--accent)}.source .code{margin:0;border:0;border-top:1px solid var(--line);border-radius:0;max-height:520px}.steps{padding-left:28px}.steps li{padding:8px 0 8px 10px}table{width:100%;table-layout:fixed;border-collapse:collapse;background:white;margin:25px 0;font-size:14px}th,td{border:1px solid var(--line);padding:12px;vertical-align:top;word-break:break-word}th{background:#edf4ef;text-align:left;color:#245146}footer{padding:35px 0;color:var(--soft);font-size:13px}body{overflow-x:hidden}
+@media(max-width:850px){.layout{display:block}nav{position:static;height:auto;max-height:260px;padding:18px 22px;border-right:0;border-bottom:1px solid var(--line)}nav .sub{margin-bottom:8px}nav .links{display:flex;overflow:auto;gap:5px}nav a{flex:none;max-width:140px}main{padding:0 21px 55px}.hero{padding:43px 0}.chapter{padding:45px 0}.diagram{padding:8px}.diagram text{font-size:18px}.code{font-size:11px}}
+@media print{nav{display:none}.layout{display:block}main{padding:0}.hero{padding:25px 0}.chapter{break-inside:auto;padding:24px 0}.source{display:none}body{background:#fff}.code{white-space:pre-wrap;overflow-wrap:anywhere}}
+</style></head><body><div class="layout"><nav aria-label="章节导航"><div class="brand">Mini SD Lab</div><p class="sub">PYTORCH · 从零到一 · 离线可读</p><div class="links"><a href="#c1"><span>01</span>先决定要造什么</a><a href="#c2"><span>02</span>把图片压成潜变量：VAE</a><a href="#c3"><span>03</span>前向加噪与反向采样</a><a href="#c4"><span>04</span>文字条件：能输入词，不等于懂中文</a><a href="#c5"><span>05</span>二维与三维去噪器</a><a href="#c6"><span>06</span>准备训练材料</a><a href="#c7"><span>07</span>第一遍训练：三种检查点</a><a href="#c8"><span>08</span>第二遍推理：图片与视频</a><a href="#c9"><span>09</span>明天在服务器上怎么开工</a><a href="#c10"><span>10</span>故障排查与限制</a><a href="#c11"><span>11</span>完整源码与练习</a></div></nav><main><header class="hero"><div class="kicker">THE PRACTICAL BOOK</div><h1>从零训练<br>图像与视频扩散模型</h1><p class="intro">一册对照真实 PyTorch 工程的中文实验手册：VAE、二维生图、三维生视频、训练与推理。</p><div class="meta">Mini SD Lab · 代码版本 0.1.0 · 本地技术烟测已跑通，GPU 训练待服务器验证</div></header><section id="c1" class="chapter"><div class="eyebrow">CHAPTER 01</div><h2>先决定要造什么</h2>
+<p class="lead">Mini SD Lab 是一台可以拆开的微型图像/视频生成机器：亲自训练一个图像压缩器、两个独立的噪声预测器，再从纯噪声回到图片和短视频。</p>
+<div class="note"><strong>首先看清边界。</strong>这不是 Stable Diffusion 官方权重的轻量复刻，也没有 MiniMax H3 的语义能力。今天能够验证“梯度真的更新、文件真的可解码”；好看的真人角色、长时间动作、实时桌面互动都不在承诺内。</div>
+<p>本书采用“原理 → 对应源码 → 验证命令”的顺序。图像生成使用二维卷积；视频生成使用沿时间轴也卷积的三维网络，并非把单张图复制四次。两种生成都依赖同一个逐帧图像 VAE，但扩散权重彼此独立。</p>
+<figure class="diagram"><svg role="img" aria-label="从数据到图像和视频的完整训练推理链" viewBox="0 0 920 218"><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8Z" fill="#23756c"/></marker></defs><rect x="12" y="50" width="175" height="118" rx="16" fill="#e4efe9"/><text x="35" y="95">授权图片 / 短视频</text><text x="35" y="123">同名 .txt 标注</text><rect x="238" y="50" width="164" height="118" rx="16" fill="#dbeae5"/><text x="280" y="101">图像 VAE</text><text x="267" y="129">像素 → 潜变量</text><rect x="456" y="10" width="194" height="83" rx="16" fill="#d9ece5"/><text x="478" y="47">二维去噪器</text><text x="478" y="71">独立图像权重</text><rect x="456" y="126" width="194" height="83" rx="16" fill="#e8e4d8"/><text x="478" y="164">三维去噪器</text><text x="478" y="189">独立视频权重</text><rect x="716" y="54" width="185" height="112" rx="16" fill="#fbebd7"/><text x="751" y="100">VAE 解码</text><text x="747" y="128">PNG / MP4</text><path d="M187 109 H238 M402 107 L456 52 M402 107 L456 168 M650 52 L716 103 M650 168 L716 116" stroke="#23756c" stroke-width="3" fill="none" marker-end="url(#arrow)"/></svg><figcaption>一条潜空间，两种生成器；尺寸必须在检查点之间一致。</figcaption></figure>
+<h3>怎样判断“做完了”</h3><p>文件存在不是画质合格。最低技术验收是：训练后的权重发生变化；新进程可以加载检查点；生成的 PNG 可被图像库打开；生成的 MP4 有真实 H.264 视频流及目标帧数。画质、文本遵循度和时间连续性必须在服务器上用授权数据另行评估。</p></section><section id="c2" class="chapter"><div class="eyebrow">CHAPTER 02</div><h2>把图片压成潜变量：VAE</h2>
+<p>如果直接对每一个 RGB 像素去噪，计算量随空间大小迅速增加。VAE 先把图片的宽高各缩成四分之一、通道变成四个；去噪网络只处理这个更小的潜空间。推理的最后一步再用同一 VAE 把潜变量翻译回 RGB。</p>
+<p>编码器输出两组值：均值 μ 和对数方差 log σ²。训练时从该分布采样，解码后比较与原图的像素误差；同时用 KL 项防止潜变量分布漂移。<code>损失 = MSE(重建图, 原图) + kl_weight × KL</code>。这里的 <code>kl_weight=0.001</code> 是本项目默认配置，不是普适最优值。</p>
+<div class="callout">为什么先训练 VAE？如果解码器连红方块都无法还原，扩散器即使完美预测噪声，也没有办法输出清晰图。图像/视频扩散器随后共享这套 VAE，但训练扩散器时将 VAE 冻结。</div>
+<p>下面是完整的 VAE 类源码。看 <code>encode</code> 的重参数化和 <code>decode</code> 的 Tanh 边界；训练循环在附录的 CLI 源码 <code>train_vae</code> 中。</p>
+<pre class="code"><code>class TinyVAE(nn.Module):  # 将像素压到四分之一空间分辨率的变分自编码器。
+    def __init__(self, base: int = 32, latent_channels: int = 4):  # 允许按显存缩放宽度。
+        super().__init__()  # 注册父类的参数管理能力。
+        self.base = base  # 保留宽度以便写入检查点配置。
+        self.latent_channels = latent_channels  # 保留潜变量通道配置。
+        self.encoder = nn.Sequential(  # 建立两次下采样的像素编码器。
+            nn.Conv2d(3, base, 3, padding=1), nn.SiLU(),  # 将 RGB 投影到隐藏特征。
+            nn.Conv2d(base, base, 4, stride=2, padding=1), nn.SiLU(),  # 将边长减半。
+            nn.Conv2d(base, base * 2, 4, stride=2, padding=1), nn.SiLU(),  # 再将边长减半。
+            nn.Conv2d(base * 2, latent_channels * 2, 3, padding=1),  # 同时预测均值与对数方差。
+        )  # 完成编码器定义。
+        self.decoder = nn.Sequential(  # 建立与编码器空间尺寸对应的解码器。
+            nn.Conv2d(latent_channels, base * 2, 3, padding=1), nn.SiLU(),  # 扩展潜变量通道。
+            nn.ConvTranspose2d(base * 2, base, 4, stride=2, padding=1), nn.SiLU(),  # 恢复两倍边长。
+            nn.ConvTranspose2d(base, base, 4, stride=2, padding=1), nn.SiLU(),  # 再恢复两倍边长。
+            nn.Conv2d(base, 3, 3, padding=1), nn.Tanh(),  # 输出 [-1,1] 的 RGB 像素。
+        )  # 完成解码器定义。
+
+    def encode(self, image: torch.Tensor, sample: bool = True):  # 返回潜变量及分布参数。
+        mean, logvar = self.encoder(image).chunk(2, dim=1)  # 沿通道拆出均值和对数方差。
+        logvar = logvar.clamp(-10.0, 10.0)  # 防止标准差溢出或数值下溢。
+        z = mean + torch.exp(0.5 * logvar) * torch.randn_like(mean) if sample else mean  # 训练时重参数化，推理时取均值。
+        return z, mean, logvar  # 交还可用于重建与 KL 损失的量。
+
+    def decode(self, latent: torch.Tensor) -&gt; torch.Tensor:  # 从潜变量还原 RGB 图像。
+        return self.decoder(latent)  # 输出范围由 Tanh 保证为 [-1,1]。
+
+    def forward(self, image: torch.Tensor):  # 统一提供训练所需的重建结果。
+        z, mean, logvar = self.encode(image)  # 执行变分编码。
+        return self.decode(z), mean, logvar</code></pre></section><section id="c3" class="chapter"><div class="eyebrow">CHAPTER 03</div><h2>前向加噪与反向采样</h2>
+<p>扩散模型不是直接画画。训练时先选一个时间步 <em>t</em>，采样纯高斯噪声 ε，把干净潜变量 z₀ 变成 <code>zₜ = √ᾱₜ · z₀ + √(1−ᾱₜ) · ε</code>。网络学习预测刚刚加入的 ε。知道 ε 后，推理才能从随机噪声逐步还原潜变量。</p>
+<p>本项目用线性 β 计划构造 ᾱ 表；用均方误差训练 ε 预测；使用确定性的 DDIM（η=0）跳步采样。采样步数不能超过训练噪声时间表。<code>--seed</code> 固定初始随机噪声，但不同设备/库版本不保证跨设备逐位相同。</p>
+<figure class="formula"><span>干净潜变量</span><b>＋噪声</b><span>带噪潜变量</span><b>→ 预测噪声</b><span>逐步还原</span></figure>
+<p><code>train_step</code> 每调用一次才更新一次权重；模型的损失下降与观众觉得好看是不同的判断。<code>sample</code> 里对每个时间点计算预测噪声、估计干净潜变量，再得到上一时间点状态。以下是完整的扩散调度器源码。</p>
+<pre class="code"><code>class Diffusion:  # 保留独立于模型权重的扩散噪声时间表。
+    def __init__(self, timesteps: int = 100):  # 配置训练扩散的离散步数。
+        if timesteps &lt; 2:  # 避免只有一步时无法定义有效噪声过程。
+            raise ValueError(&quot;扩散步数至少为 2&quot;)  # 提示可修复的配置错误。
+        self.timesteps = timesteps  # 记录检查点必须复现的训练参数。
+        betas = torch.linspace(0.0001, 0.02, timesteps, dtype=torch.float32)  # 使用线性方差计划。
+        self.alpha_bar = torch.cumprod(1.0 - betas, dim=0)  # 预计算各步保留的原始信号比例。
+
+    def train_step(self, model, clean: torch.Tensor, prompts: list[str], optimizer) -&gt; float:  # 执行一次真实梯度更新。
+        model.train()  # 启用模型训练模式。
+        batch = clean.shape[0]  # 让时间和文本条件与批量对应。
+        if batch == 0 or len(prompts) != batch:  # 阻止空批次和错位文本。
+            raise ValueError(&quot;非空样本批次必须与提示词数量一致&quot;)  # 显示明确错误。
+        step = torch.randint(0, self.timesteps, (batch,), device=clean.device)  # 对每个样本随机选择噪声等级。
+        shape = (batch,) + (1,) * (clean.ndim - 1)  # 准备对图像或视频广播的系数。
+        alpha = self.alpha_bar.to(clean.device)[step].reshape(shape)  # 查询累积信号比例。
+        noise = torch.randn_like(clean)  # 采样训练目标高斯噪声。
+        noisy = alpha.sqrt() * clean + (1.0 - alpha).sqrt() * noise  # 按 DDPM 前向公式加噪。
+        prediction = model(noisy, step, prompts)  # 让网络预测刚加入的噪声。
+        loss = F.mse_loss(prediction, noise)  # 最小化噪声预测误差。
+        optimizer.zero_grad(set_to_none=True)  # 清空上一轮梯度。
+        loss.backward()  # 将误差回传给网络参数。
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)  # 避免小数据集上梯度爆炸。
+        optimizer.step()  # 实际更新模型权重。
+        return float(loss.detach().cpu())  # 输出可记录的标量训练损失。
+
+    @torch.no_grad()  # 推理阶段不构建梯度图。
+    def sample(self, model, shape: tuple[int, ...], prompts: list[str], steps: int = 20, seed: int = 0, guidance: float = 1.0) -&gt; torch.Tensor:  # 从噪声生成潜变量。
+        if steps &lt; 1 or steps &gt; self.timesteps:  # 要求推理步数不超过已定义的噪声表。
+            raise ValueError(&quot;推理步数须位于 1 与训练扩散步数之间&quot;)  # 防止重复或越界时间索引。
+        if len(shape) not in (4, 5) or shape[0] &lt; 1 or len(prompts) != shape[0]:  # 检查输入形状和提示词对齐。
+            raise ValueError(&quot;输入须为有效批量图像/视频潜变量，且提示词数量匹配&quot;)  # 拒绝不可推理配置。
+        if guidance &lt; 0:  # 避免误传负引导系数。
+            raise ValueError(&quot;引导系数不可为负数&quot;)  # 明确参数含义。
+        device = next(model.parameters()).device  # 从真实模型读取 CPU/MPS/CUDA 设备。
+        generator = torch.Generator(device=&quot;cpu&quot;).manual_seed(seed)  # 使用 CPU 种子保持跨调用稳定。
+        latent = torch.randn(shape, generator=generator, device=&quot;cpu&quot;).to(device)  # 创建相同种子初始噪声。
+        times = torch.linspace(self.timesteps - 1, 0, steps).round().long().tolist()  # 选取降序 DDIM 时间步。
+        alpha_bar = self.alpha_bar.to(device)  # 将噪声计划移到模型设备。
+        model.eval()  # 关闭潜在的训练态随机层。
+        for index, current in enumerate(times):  # 依次逆向消除噪声。
+            batch_step = torch.full((shape[0],), current, device=device, dtype=torch.long)  # 构造模型所需时间条件。
+            predicted = model(latent, batch_step, prompts)  # 估计有文本条件下的噪声。
+            if guidance != 1.0:  # 仅在需要 CFG 时增加一次前向计算。
+                unconditional = model(latent, batch_step, [&quot;&quot;] * shape[0])  # 估计空提示词噪声。
+                predicted = unconditional + guidance * (predicted - unconditional)  # 应用分类器自由引导。
+            alpha = alpha_bar[current]  # 获取当前时间步的信号比例。
+            previous = times[index + 1] if index + 1 &lt; len(times) else -1  # 最后一步视为原始图像。
+            alpha_prev = alpha_bar[previous] if previous &gt;= 0 else torch.ones_like(alpha)  # 为终点使用全信号比例。
+            estimate = (latent - (1.0 - alpha).sqrt() * predicted) / alpha.sqrt()  # 根据预测噪声还原干净潜变量。
+            latent = alpha_prev.sqrt() * estimate + (1.0 - alpha_prev).sqrt() * predicted  # 执行 eta=0 的确定性 DDIM 更新。
+        return latent</code></pre></section><section id="c4" class="chapter"><div class="eyebrow">CHAPTER 04</div><h2>文字条件：能输入词，不等于懂中文</h2>
+<p>文本条件的目的，是让数据里的“红 方块”和图像里的红色方块形成可训练关联。本项目先用空格把一句文本分成短词，再通过 SHA-256 的首字节映射到一个小词表。它只提供稳定索引，不预先理解语义；不同词可能哈希碰撞，训练数据很少时自然无法泛化。</p>
+<p>每个词对应一个可训练向量；所有有效词向量取平均，加上时间向量，送进二维或三维去噪器的中层。扩散训练时默认有概率丢弃条件，用于让模型同时学到有词和无词预测。推理可用 CFG：<code>ε = ε_uncond + guidance × (ε_cond − ε_uncond)</code>。引导系数增加只会放大两种预测的差异；模型没学会对应词时不会凭空长出知识。</p>
+<div class="note"><strong>中文分词提醒：</strong>标注和推理应统一用空格拆词，例如 <code>红 衣 女子</code>，否则整句会成为一个哈希 token。短句、统一词表比堆长提示词更适合这个教学模型。</div>
+<pre class="code"><code>class PromptCondition(nn.Module):  # 轻量哈希词表，仅学习数据集内的文字关联。
+    def __init__(self, dim: int):  # 配置条件特征宽度。
+        super().__init__()  # 注册可训练词嵌入。
+        self.table = nn.Embedding(257, dim, padding_idx=0)  # 0 代表无条件，其他索引代表哈希词。
+
+    def forward(self, prompts: list[str], device: torch.device) -&gt; torch.Tensor:  # 将同批提示词转为条件向量。
+        indices = []  # 收集每条文本对应的最多 16 个词。
+        for prompt in prompts:  # 对每条文本独立分词。
+            words = prompt.lower().strip().split()[:16]  # 用空格分词；中文需数据集自身约定词边界。
+            hashed = [hashlib.sha256(word.encode(&quot;utf-8&quot;)).digest()[0] + 1 for word in words]  # 稳定映射到小词表。
+            indices.append(hashed + [0] * (16 - len(hashed)))  # 将不同长度的文本补齐。
+        tokens = torch.tensor(indices, dtype=torch.long, device=device)  # 让索引与模型处在同一设备。
+        mask = (tokens != 0).unsqueeze(-1)  # 忽略补齐槽位。
+        return (self.table(tokens) * mask).sum(dim=1) / mask.sum(dim=1).clamp(min=1)</code></pre></section><section id="c5" class="chapter"><div class="eyebrow">CHAPTER 05</div><h2>二维与三维去噪器</h2>
+<p>图像潜变量张量是 <code>[B, 4, H/4, W/4]</code>；视频潜变量多一根时间轴，形如 <code>[B, 4, T, H/4, W/4]</code>。<code>B</code> 是批大小，<code>T</code> 是固定帧数。二维卷积观察同一画面的相邻像素；三维卷积的核跨相邻帧，所以能够在训练数据中学习有限的运动变化。</p>
+<p>每个去噪器都有输入层、空间下采样、中层、上采样、跳跃连接和输出层。三维模式的下采样步幅是 <code>(1,2,2)</code>：只压空间，不压时间。网络的输出维度与加噪潜变量完全相同。没有第一帧控制、长程记忆或人物身份专用模块，不要把“时空卷积”说成成熟的视频模型。</p>
+<pre class="code"><code>class _ConditionalUNet(nn.Module):  # 二维或三维共用的紧凑条件去噪器。
+    def __init__(self, video: bool, base: int = 32):  # 用 video 选择时间轴上的卷积模式。
+        super().__init__()  # 注册子网络和训练参数。
+        self.video = video  # 记录模型模式供运行时检查。
+        self.base = base  # 记录通道数供检查点重建。
+        conv = nn.Conv3d if video else nn.Conv2d  # 视频保留显式的帧维度。
+        transpose = nn.ConvTranspose3d if video else nn.ConvTranspose2d  # 为视频和图像选择对应的上采样。
+        kernel = (3, 3, 3) if video else 3  # 视频卷积覆盖相邻帧。
+        padding = (1, 1, 1) if video else 1  # 保持非下采样层的空间尺寸。
+        down_kernel = (1, 4, 4) if video else 4  # 下采样只作用于空间维。
+        down_stride = (1, 2, 2) if video else 2  # 保持视频帧数原样。
+        down_pad = (0, 1, 1) if video else 1  # 使空间尺寸精确减半。
+        self.input = conv(4, base, kernel, padding=padding)  # 提取初始潜变量特征。
+        self.down = conv(base, base * 2, down_kernel, stride=down_stride, padding=down_pad)  # 构建低分辨率分支。
+        self.middle = conv(base * 2, base * 2, kernel, padding=padding)  # 在低分辨率融合邻域信息。
+        self.up = transpose(base * 2, base, down_kernel, stride=down_stride, padding=down_pad)  # 恢复输入的空间尺寸。
+        self.output = conv(base * 2, 4, kernel, padding=padding)  # 拼接跳连后预测同尺寸噪声。
+        self.time = nn.Sequential(nn.Linear(base, base), nn.SiLU(), nn.Linear(base, base))  # 学习时间特征映射。
+        self.text = PromptCondition(base)  # 学习文本和目标画面的数据集内关联。
+        self.condition = nn.Linear(base, base * 2)  # 将文本与时间投影到低分辨率特征。
+
+    def forward(self, latent: torch.Tensor, timestep: torch.Tensor, prompts: list[str]) -&gt; torch.Tensor:  # 预测潜变量上的噪声。
+        expected_dim = 5 if self.video else 4  # 区分批量视频与批量图片。
+        if latent.ndim != expected_dim or latent.shape[1] != 4:  # 拒绝输入错误的模型格式。
+            raise ValueError(f&quot;预期 {expected_dim} 维且通道为 4 的潜变量&quot;)  # 用中文说明失败原因。
+        if len(prompts) != latent.shape[0] or timestep.numel() != latent.shape[0]:  # 保证条件逐样本对齐。
+            raise ValueError(&quot;提示词、时间步与批大小不一致&quot;)  # 避免条件静默串样。
+        time = self.time(timestep_embedding(timestep, self.base))  # 取得每个样本的扩散时间向量。
+        text = self.text(prompts, latent.device)  # 取得每个样本的文本向量。
+        shape = (-1, self.base * 2, 1, 1, 1) if self.video else (-1, self.base * 2, 1, 1)  # 选择条件广播形状。
+        condition = self.condition(time + text).reshape(shape)  # 把两个条件送入低分辨率特征。
+        skip = F.silu(self.input(latent))  # 缓存高分辨率的局部信息。
+        hidden = F.silu(self.down(skip) + condition)  # 在低分辨率注入条件。
+        hidden = F.silu(self.middle(hidden) + condition)  # 进一步聚合空间或时空上下文。
+        hidden = F.silu(self.up(hidden))  # 还原潜变量空间尺寸。
+        return self.output(torch.cat([hidden, skip], dim=1))</code></pre><pre class="code"><code>class ImageDenoiser(_ConditionalUNet):  # 仅沿二维空间进行扩散预测。
+    def __init__(self, base: int = 32):  # 允许测试和 GPU 训练采用不同网络宽度。
+        super().__init__(video=False, base=base)</code></pre><pre class="code"><code>class VideoDenoiser(_ConditionalUNet):  # 沿时间和二维空间共同预测噪声。
+    def __init__(self, base: int = 32):  # 允许测试和 GPU 训练采用不同网络宽度。
+        super().__init__(video=True, base=base)</code></pre></section><section id="c6" class="chapter"><div class="eyebrow">CHAPTER 06</div><h2>准备训练材料</h2>
+<p>把有授权的图片放进 <code>data/images/</code>，MP4 短片放进 <code>data/videos/</code>。同名 UTF-8 <code>.txt</code> 是条件，例如 <code>scene01.mp4</code> 对应 <code>scene01.txt</code>；缺标注会变成空条件。图片和视频帧都先中心裁方，再缩到 VAE 的训练尺寸，像素从 0–255 变到 −1 至 1。</p>
+<p>视频数据集顺序读取真正的帧，再均匀抽出指定 <code>--frames</code> 帧。它不会用一张图片冒充视频；但读取超长源视频会先占用内存，所以服务器数据应先切成数秒短片。视频训练不使用原声音轨，导出的视频也无声；配音、字幕与剪辑属于另一条制作流程。</p>
+<h3>目录示例</h3>
+<pre class="code"><code>data/images/scene01.png
+data/images/scene01.txt
+data/videos/action01.mp4
+data/videos/action01.txt</code></pre>
+<p>没有授权数据时，可先用工程内的几何烟测生成器。它画的是红方块、蓝圆形和简单平移，不代表人物数据集。</p>
+<pre class="code"><code>python3 scripts/make_smoke_data.py --out data/smoke</code></pre><pre class="code"><code>class VideoDataset(Dataset):  # 读取固定帧数的视频片段用于三维扩散训练。
+    def __init__(self, folder: str | Path, size: int = 32, frames: int = 4):  # 配置目录和时空尺寸。
+        self.folder = Path(folder)  # 归一化数据目录。
+        self.size = size  # 保持与 VAE 训练尺寸一致。
+        self.frames = frames  # 规定每个样本的时间长度。
+        if frames &lt; 2:  # 视频分支要求至少两帧。
+            raise ValueError(&quot;视频至少需要两帧&quot;)  # 阻止伪视频训练。
+        self.paths = sorted(self.folder.glob(&quot;*.mp4&quot;)) if self.folder.is_dir() else []  # 只选择 MP4 数据。
+        if not self.paths:  # 防止没有媒体时空转。
+            raise ValueError(f&quot;目录中没有 MP4：{self.folder}&quot;)  # 标注真实错误来源。
+
+    def __len__(self) -&gt; int:  # 提供真实视频文件数量。
+        return len(self.paths)  # 每个文件对应一个训练片段。
+
+    def __getitem__(self, index: int):  # 从实际 MP4 解码并均匀抽帧。
+        path = self.paths[index]  # 定位当前视频素材。
+        capture = cv2.VideoCapture(str(path))  # 打开 OpenCV 视频解码器。
+        if not capture.isOpened():  # 立即检测无法打开的文件。
+            raise ValueError(f&quot;无法解码视频：{path}&quot;)  # 禁止用静态占位帧掩盖损坏视频。
+        frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))  # 从 MP4 元数据读取帧数而不缓存帧。
+        if frame_count &lt; self.frames:  # 媒体没有可靠且足够长的帧数信息时拒绝。
+            capture.release()  # 在报错前释放视频句柄。
+            raise ValueError(f&quot;视频帧数不足或元数据不可用：{path}&quot;)  # 提醒先用 FFmpeg 重封装。
+        positions = np.linspace(0, frame_count - 1, self.frames).round().astype(int)  # 在整段时间均匀选帧。
+        selected = set(int(position) for position in positions)  # 只为目标帧做图片预处理。
+        decoded = {}  # 最多保留用户要求的帧数，不缓存整段视频。
+        frame_index = 0  # 为顺序解码的每个真实帧标记索引。
+        try:  # 即使解码异常也释放文件句柄。
+            while frame_index &lt;= int(positions[-1]):  # 最后一帧取齐后不再读取其余画面。
+                ok, frame = capture.read()  # 顺序提取真实压缩视频帧。
+                if not ok:  # 播放到片尾或遇到解码错误。
+                    break  # 在下方报告缺帧，不制造占位帧。
+                if frame_index in selected:  # 只预处理均匀选择的目标帧。
+                    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # 转为 RGB 顺序。
+                    decoded[frame_index] = _prepare(Image.fromarray(rgb), self.size)  # 最多持有目标数量的张量。
+                frame_index += 1  # 推进真实视频帧位置。
+        finally:  # 不依赖 Python 回收机制管理句柄。
+            capture.release()  # 释放操作系统视频资源。
+        if len(decoded) != self.frames:  # 核对容器声称的帧数与真实可解码帧数。
+            raise ValueError(f&quot;视频实际可解码帧数不足 {self.frames}：{path}&quot;)  # 防止损坏 MP4 被静默补帧。
+        clip = torch.stack([decoded[int(position)] for position in positions], dim=1)  # 形成 [C,T,H,W] 视频片段。
+        return clip, _caption(path)</code></pre></section><section id="c7" class="chapter"><div class="eyebrow">CHAPTER 07</div><h2>第一遍训练：三种检查点</h2>
+<p>训练必须按顺序：先训练 VAE，再用同一个 VAE 分别训练图片模型和视频模型。<code>--steps</code> 表示新增优化器更新次数，不是轮数；<code>--diffusion-steps</code> 决定训练噪声表长度，和推理时的 <code>--sample-steps</code> 不是同一个参数。</p>
+<h3>只验证能运行的最小命令</h3>
+<pre class="code"><code>python3 -m mini_sd train-vae --data data/smoke/images --steps 1 --size 32 --base 8 --device cpu --out checkpoints/vae.pt
+python3 -m mini_sd train-image --data data/smoke/images --vae checkpoints/vae.pt --steps 1 --base 8 --diffusion-steps 16 --device cpu --out checkpoints/image.pt
+python3 -m mini_sd train-video --data data/smoke/videos --vae checkpoints/vae.pt --steps 1 --base 8 --frames 4 --diffusion-steps 16 --device cpu --out checkpoints/video.pt</code></pre>
+<p>检查点包含模型权重、优化器状态、网络宽度、图像尺寸、训练扩散步数和累计更新步数；视频权重还保存帧数。中断后可通过 <code>--resume</code> 延续已有检查点，例如把下一段 <code>--steps 100</code> 继续追加到同一类型的模型。恢复时需要保持对应的尺寸、网络宽度和扩散时间表不变。当前版本只恢复权重/优化器/步数，不保存每个数据加载器和随机数生成器状态，因此不能保证逐位重放训练轨迹。</p>
+<div class="callout">一次更新的数值损失只能证明梯度路径工作；判断画质必须看训练多步的独立验证集和逐帧视频结果。不要把烟测输出当成“生成能力已训成”。</div></section><section id="c8" class="chapter"><div class="eyebrow">CHAPTER 08</div><h2>第二遍推理：图片与视频</h2>
+<p>推理从随机潜变量开始，使用图像或视频各自的去噪器进行 DDIM 采样，再让 VAE 解码。图像输出 PNG；视频把真实生成的连续帧交给 FFmpeg，编码 H.264/yuv420p 的无声 MP4。</p>
+<pre class="code"><code>python3 -m mini_sd sample-image --vae checkpoints/vae.pt --model checkpoints/image.pt --prompt &#x27;红 方块&#x27; --sample-steps 2 --seed 7 --device cpu --out outputs/sample.png
+python3 -m mini_sd sample-video --vae checkpoints/vae.pt --model checkpoints/video.pt --prompt &#x27;蓝 圆形&#x27; --sample-steps 2 --fps 8 --seed 7 --device cpu --out outputs/sample.mp4
+ffprobe -v error -count_frames -show_entries stream=codec_name,nb_read_frames,width,height -of json outputs/sample.mp4</code></pre>
+<p>模型检查点限制采样尺寸，视频检查点还限制帧数；不能只改导出参数就让模型无代价生成长片。<code>--guidance</code> 可以显式设置大于 1 的 CFG，但至少要先在真实标注数据上训练，且仍需看成片。媒体编码器不可用会直接报错，不会伪装生成成功。</p>
+<h3>完整调用链走读</h3><ol><li>CLI 从检查点读取 <code>kind</code>，拒绝把 image 权重塞进 video 命令。</li><li>读取网络宽度、VAE 尺寸及扩散时间表；新建同结构网络并载入权重。</li><li>随机噪声变成图片潜变量或 <code>[1,4,T,h,w]</code> 视频潜变量，按 DDIM 反向迭代。</li><li>视频潜变量拆成逐帧图像潜变量，交给共享 VAE 解码；随后送往 FFmpeg。</li><li>独立工具重新打开 PNG/MP4；能播放是技术通过，不是审美通过。</li></ol></section><section id="c9" class="chapter"><div class="eyebrow">CHAPTER 09</div><h2>明天在服务器上怎么开工</h2>
+<p>服务器还未开启，因此本章是**操作顺序**，不是已验证的 GPU 性能报告。先确认操作系统、显卡型号和显存、驱动、CUDA 对应的 PyTorch，再检查 <code>ffmpeg</code>、Python 和可用磁盘。不要照抄陌生整合包或为教程临时拉满卡。</p>
+<ol class="steps"><li><strong>建立隔离环境。</strong>用 Python 3.10+ 创建虚拟环境；先按官方指引安装与服务器驱动相符的 PyTorch CUDA 轮子，再在仓库根目录安装本项目。<code>torch.cuda.is_available()</code> 必须为真。</li><li><strong>跑单步技术烟测。</strong>先用几何素材跑三种检查点与两个输出，<code>ffprobe</code> 验证真实帧数。若 CUDA OOM，先把批次设为 1、尺寸退回 32、视频帧数退回 4。</li><li><strong>接授权素材。</strong>按目录与同名 txt 规则准备短图/短片；先核对画面版权、帧率、静音情况和标注语义。分训练与验证素材，避免只看训练数据。</li><li><strong>先做 VAE 验证。</strong>检查重建图再决定是否扩大尺寸；重建基础差则继续训练 VAE，不能靠扩散参数弥补。</li><li><strong>再训练图像与视频模型。</strong>记录 GPU 峰值、每步耗时、损失曲线和固定种子的输出对照；仅当一个小试验可信时才扩大样本/步数。每次中断用 <code>--resume</code>，并保留原检查点副本。</li><li><strong>独立审片。</strong>真正打开最终图像/视频，核角色、服装、动作连续性、闪烁、时长与画幅；不足就报告“不合格”，不要用“已导出”代替。</li></ol>
+<div class="note"><strong>GPU 参数留白：</strong>服务器的显存、驱动和数据量未知，书中不编造训练小时数、最大分辨率或商业画质。当前版本也不包含混合精度、分布式、数据流式读取或高级文本编码器。</div></section><section id="c10" class="chapter"><div class="eyebrow">CHAPTER 10</div><h2>故障排查与限制</h2>
+<table><thead><tr><th>现象</th><th>先核实</th><th>处理边界</th></tr></thead><tbody>
+<tr><td>看起来像噪声</td><td>是否只训练一两步；VAE 能否重建授权训练图</td><td>先提高真实训练量；不承诺短时间得到人物质量</td></tr>
+<tr><td>提示词没有作用</td><td>同名 txt 是否存在；中文词是否空格分隔</td><td>哈希嵌入不预训练语言语义，需配对数据学习</td></tr>
+<tr><td>视频不动或闪烁</td><td>训练短片是否有真实动作；是否采用视频检查点</td><td>增加有意义的连续帧数据，不能靠 FFmpeg 修复内容</td></tr>
+<tr><td>尺寸或权重报错</td><td>VAE 与扩散检查点的 size/base/kind</td><td>使用同一训练系列，严禁强行加载错权重</td></tr>
+<tr><td>CUDA 不可用</td><td>驱动、torch CUDA 轮子及 Python 环境</td><td>先校准服务器环境，不把 CPU 跑通说成 GPU 验收</td></tr>
+<tr><td>显存不足</td><td>视频帧数、批次、尺寸、网络宽度</td><td>小批次优先；目前无混精和分布式承诺</td></tr>
+<tr><td>MP4 无法编码</td><td>FFmpeg 是否包含 libx264</td><td>安装可信 FFmpeg 或明确报阻塞，禁写空文件</td></tr>
+</tbody></table><p>本项目专注教学与明天的服务器实验，既没有从 H3/SD 权重迁移，也没有训练角色 LoRA、RefMod 或把生成的短片剪成完整作品。下个阶段是否接现成高质量模型，应以用户新的明确方向决定。</p></section><section id="c11" class="chapter"><div class="eyebrow">CHAPTER 11</div><h2>完整源码与练习</h2>
+<p>前文依次讲了模型、噪声、数据与命令。下面四份代码是构建时从当前项目原文嵌入的完整实现，不是另写的伪代码。阅读路线：先读 <code>models.py</code> 看张量形状，再读 <code>diffusion.py</code> 看训练/采样，随后读 <code>data.py</code> 看真实媒体，最后在 <code>__main__.py</code> 串起 CLI 到输出文件。</p>
+<p><strong>练习 A：</strong>保持数据集和种子不变，只增加训练步数，比较固定提示词输出；先记录 VAE 重建结果，再看生成结果。<strong>练习 B：</strong>把运动短片变成方向相反的两组标注，观察三维卷积是否能学习方向变化。<strong>练习 C：</strong>让图片标注中的中文不加空格，再用分词后的提示词推理，解释为什么输出可能不符合文字。</p>
+<details class="source"><summary>mini_sd/models.py · 完整源码</summary><pre class="code"><code>&quot;&quot;&quot;轻量 VAE 与图像/视频去噪网络：所有权重均从零初始化。&quot;&quot;&quot;
+
+import hashlib  # 使用稳定摘要将短文本映射到可训练的词表索引。
+import math  # 构造正弦时间嵌入所需的频率。
+
+import torch  # 提供张量、设备与随机采样。
+from torch import nn  # 提供神经网络组件。
+from torch.nn import functional as F  # 提供插值与激活函数。
+
+
+class TinyVAE(nn.Module):  # 将像素压到四分之一空间分辨率的变分自编码器。
+    def __init__(self, base: int = 32, latent_channels: int = 4):  # 允许按显存缩放宽度。
+        super().__init__()  # 注册父类的参数管理能力。
+        self.base = base  # 保留宽度以便写入检查点配置。
+        self.latent_channels = latent_channels  # 保留潜变量通道配置。
+        self.encoder = nn.Sequential(  # 建立两次下采样的像素编码器。
+            nn.Conv2d(3, base, 3, padding=1), nn.SiLU(),  # 将 RGB 投影到隐藏特征。
+            nn.Conv2d(base, base, 4, stride=2, padding=1), nn.SiLU(),  # 将边长减半。
+            nn.Conv2d(base, base * 2, 4, stride=2, padding=1), nn.SiLU(),  # 再将边长减半。
+            nn.Conv2d(base * 2, latent_channels * 2, 3, padding=1),  # 同时预测均值与对数方差。
+        )  # 完成编码器定义。
+        self.decoder = nn.Sequential(  # 建立与编码器空间尺寸对应的解码器。
+            nn.Conv2d(latent_channels, base * 2, 3, padding=1), nn.SiLU(),  # 扩展潜变量通道。
+            nn.ConvTranspose2d(base * 2, base, 4, stride=2, padding=1), nn.SiLU(),  # 恢复两倍边长。
+            nn.ConvTranspose2d(base, base, 4, stride=2, padding=1), nn.SiLU(),  # 再恢复两倍边长。
+            nn.Conv2d(base, 3, 3, padding=1), nn.Tanh(),  # 输出 [-1,1] 的 RGB 像素。
+        )  # 完成解码器定义。
+
+    def encode(self, image: torch.Tensor, sample: bool = True):  # 返回潜变量及分布参数。
+        mean, logvar = self.encoder(image).chunk(2, dim=1)  # 沿通道拆出均值和对数方差。
+        logvar = logvar.clamp(-10.0, 10.0)  # 防止标准差溢出或数值下溢。
+        z = mean + torch.exp(0.5 * logvar) * torch.randn_like(mean) if sample else mean  # 训练时重参数化，推理时取均值。
+        return z, mean, logvar  # 交还可用于重建与 KL 损失的量。
+
+    def decode(self, latent: torch.Tensor) -&gt; torch.Tensor:  # 从潜变量还原 RGB 图像。
+        return self.decoder(latent)  # 输出范围由 Tanh 保证为 [-1,1]。
+
+    def forward(self, image: torch.Tensor):  # 统一提供训练所需的重建结果。
+        z, mean, logvar = self.encode(image)  # 执行变分编码。
+        return self.decode(z), mean, logvar  # 将重建与分布参数交给损失函数。
+
+
+def timestep_embedding(timestep: torch.Tensor, dim: int) -&gt; torch.Tensor:  # 生成确定性的扩散时间特征。
+    half = dim // 2  # 为正弦与余弦各留一半通道。
+    freqs = torch.exp(-math.log(10000) * torch.arange(half, device=timestep.device) / max(half - 1, 1))  # 建立对数间隔频率。
+    phase = timestep.float()[:, None] * freqs[None, :]  # 将每个时间步乘以频率。
+    embedding = torch.cat([phase.sin(), phase.cos()], dim=-1)  # 拼合正弦和余弦特征。
+    return F.pad(embedding, (0, dim % 2))  # 奇数维时补一个通道。
+
+
+class PromptCondition(nn.Module):  # 轻量哈希词表，仅学习数据集内的文字关联。
+    def __init__(self, dim: int):  # 配置条件特征宽度。
+        super().__init__()  # 注册可训练词嵌入。
+        self.table = nn.Embedding(257, dim, padding_idx=0)  # 0 代表无条件，其他索引代表哈希词。
+
+    def forward(self, prompts: list[str], device: torch.device) -&gt; torch.Tensor:  # 将同批提示词转为条件向量。
+        indices = []  # 收集每条文本对应的最多 16 个词。
+        for prompt in prompts:  # 对每条文本独立分词。
+            words = prompt.lower().strip().split()[:16]  # 用空格分词；中文需数据集自身约定词边界。
+            hashed = [hashlib.sha256(word.encode(&quot;utf-8&quot;)).digest()[0] + 1 for word in words]  # 稳定映射到小词表。
+            indices.append(hashed + [0] * (16 - len(hashed)))  # 将不同长度的文本补齐。
+        tokens = torch.tensor(indices, dtype=torch.long, device=device)  # 让索引与模型处在同一设备。
+        mask = (tokens != 0).unsqueeze(-1)  # 忽略补齐槽位。
+        return (self.table(tokens) * mask).sum(dim=1) / mask.sum(dim=1).clamp(min=1)  # 对真实词取平均。
+
+
+class _ConditionalUNet(nn.Module):  # 二维或三维共用的紧凑条件去噪器。
+    def __init__(self, video: bool, base: int = 32):  # 用 video 选择时间轴上的卷积模式。
+        super().__init__()  # 注册子网络和训练参数。
+        self.video = video  # 记录模型模式供运行时检查。
+        self.base = base  # 记录通道数供检查点重建。
+        conv = nn.Conv3d if video else nn.Conv2d  # 视频保留显式的帧维度。
+        transpose = nn.ConvTranspose3d if video else nn.ConvTranspose2d  # 为视频和图像选择对应的上采样。
+        kernel = (3, 3, 3) if video else 3  # 视频卷积覆盖相邻帧。
+        padding = (1, 1, 1) if video else 1  # 保持非下采样层的空间尺寸。
+        down_kernel = (1, 4, 4) if video else 4  # 下采样只作用于空间维。
+        down_stride = (1, 2, 2) if video else 2  # 保持视频帧数原样。
+        down_pad = (0, 1, 1) if video else 1  # 使空间尺寸精确减半。
+        self.input = conv(4, base, kernel, padding=padding)  # 提取初始潜变量特征。
+        self.down = conv(base, base * 2, down_kernel, stride=down_stride, padding=down_pad)  # 构建低分辨率分支。
+        self.middle = conv(base * 2, base * 2, kernel, padding=padding)  # 在低分辨率融合邻域信息。
+        self.up = transpose(base * 2, base, down_kernel, stride=down_stride, padding=down_pad)  # 恢复输入的空间尺寸。
+        self.output = conv(base * 2, 4, kernel, padding=padding)  # 拼接跳连后预测同尺寸噪声。
+        self.time = nn.Sequential(nn.Linear(base, base), nn.SiLU(), nn.Linear(base, base))  # 学习时间特征映射。
+        self.text = PromptCondition(base)  # 学习文本和目标画面的数据集内关联。
+        self.condition = nn.Linear(base, base * 2)  # 将文本与时间投影到低分辨率特征。
+
+    def forward(self, latent: torch.Tensor, timestep: torch.Tensor, prompts: list[str]) -&gt; torch.Tensor:  # 预测潜变量上的噪声。
+        expected_dim = 5 if self.video else 4  # 区分批量视频与批量图片。
+        if latent.ndim != expected_dim or latent.shape[1] != 4:  # 拒绝输入错误的模型格式。
+            raise ValueError(f&quot;预期 {expected_dim} 维且通道为 4 的潜变量&quot;)  # 用中文说明失败原因。
+        if len(prompts) != latent.shape[0] or timestep.numel() != latent.shape[0]:  # 保证条件逐样本对齐。
+            raise ValueError(&quot;提示词、时间步与批大小不一致&quot;)  # 避免条件静默串样。
+        time = self.time(timestep_embedding(timestep, self.base))  # 取得每个样本的扩散时间向量。
+        text = self.text(prompts, latent.device)  # 取得每个样本的文本向量。
+        shape = (-1, self.base * 2, 1, 1, 1) if self.video else (-1, self.base * 2, 1, 1)  # 选择条件广播形状。
+        condition = self.condition(time + text).reshape(shape)  # 把两个条件送入低分辨率特征。
+        skip = F.silu(self.input(latent))  # 缓存高分辨率的局部信息。
+        hidden = F.silu(self.down(skip) + condition)  # 在低分辨率注入条件。
+        hidden = F.silu(self.middle(hidden) + condition)  # 进一步聚合空间或时空上下文。
+        hidden = F.silu(self.up(hidden))  # 还原潜变量空间尺寸。
+        return self.output(torch.cat([hidden, skip], dim=1))  # 输出真实网络预测的噪声。
+
+
+class ImageDenoiser(_ConditionalUNet):  # 仅沿二维空间进行扩散预测。
+    def __init__(self, base: int = 32):  # 允许测试和 GPU 训练采用不同网络宽度。
+        super().__init__(video=False, base=base)  # 初始化二维卷积分支。
+
+
+class VideoDenoiser(_ConditionalUNet):  # 沿时间和二维空间共同预测噪声。
+    def __init__(self, base: int = 32):  # 允许测试和 GPU 训练采用不同网络宽度。
+        super().__init__(video=True, base=base)  # 初始化三维时空卷积分支。
+</code></pre></details><details class="source"><summary>mini_sd/diffusion.py · 完整源码</summary><pre class="code"><code>&quot;&quot;&quot;DDPM 噪声学习与 DDIM 无随机反向采样。&quot;&quot;&quot;
+
+import torch  # 提供随机采样、张量运算和梯度能力。
+from torch.nn import functional as F  # 提供均方误差损失。
+
+
+class Diffusion:  # 保留独立于模型权重的扩散噪声时间表。
+    def __init__(self, timesteps: int = 100):  # 配置训练扩散的离散步数。
+        if timesteps &lt; 2:  # 避免只有一步时无法定义有效噪声过程。
+            raise ValueError(&quot;扩散步数至少为 2&quot;)  # 提示可修复的配置错误。
+        self.timesteps = timesteps  # 记录检查点必须复现的训练参数。
+        betas = torch.linspace(0.0001, 0.02, timesteps, dtype=torch.float32)  # 使用线性方差计划。
+        self.alpha_bar = torch.cumprod(1.0 - betas, dim=0)  # 预计算各步保留的原始信号比例。
+
+    def train_step(self, model, clean: torch.Tensor, prompts: list[str], optimizer) -&gt; float:  # 执行一次真实梯度更新。
+        model.train()  # 启用模型训练模式。
+        batch = clean.shape[0]  # 让时间和文本条件与批量对应。
+        if batch == 0 or len(prompts) != batch:  # 阻止空批次和错位文本。
+            raise ValueError(&quot;非空样本批次必须与提示词数量一致&quot;)  # 显示明确错误。
+        step = torch.randint(0, self.timesteps, (batch,), device=clean.device)  # 对每个样本随机选择噪声等级。
+        shape = (batch,) + (1,) * (clean.ndim - 1)  # 准备对图像或视频广播的系数。
+        alpha = self.alpha_bar.to(clean.device)[step].reshape(shape)  # 查询累积信号比例。
+        noise = torch.randn_like(clean)  # 采样训练目标高斯噪声。
+        noisy = alpha.sqrt() * clean + (1.0 - alpha).sqrt() * noise  # 按 DDPM 前向公式加噪。
+        prediction = model(noisy, step, prompts)  # 让网络预测刚加入的噪声。
+        loss = F.mse_loss(prediction, noise)  # 最小化噪声预测误差。
+        optimizer.zero_grad(set_to_none=True)  # 清空上一轮梯度。
+        loss.backward()  # 将误差回传给网络参数。
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)  # 避免小数据集上梯度爆炸。
+        optimizer.step()  # 实际更新模型权重。
+        return float(loss.detach().cpu())  # 输出可记录的标量训练损失。
+
+    @torch.no_grad()  # 推理阶段不构建梯度图。
+    def sample(self, model, shape: tuple[int, ...], prompts: list[str], steps: int = 20, seed: int = 0, guidance: float = 1.0) -&gt; torch.Tensor:  # 从噪声生成潜变量。
+        if steps &lt; 1 or steps &gt; self.timesteps:  # 要求推理步数不超过已定义的噪声表。
+            raise ValueError(&quot;推理步数须位于 1 与训练扩散步数之间&quot;)  # 防止重复或越界时间索引。
+        if len(shape) not in (4, 5) or shape[0] &lt; 1 or len(prompts) != shape[0]:  # 检查输入形状和提示词对齐。
+            raise ValueError(&quot;输入须为有效批量图像/视频潜变量，且提示词数量匹配&quot;)  # 拒绝不可推理配置。
+        if guidance &lt; 0:  # 避免误传负引导系数。
+            raise ValueError(&quot;引导系数不可为负数&quot;)  # 明确参数含义。
+        device = next(model.parameters()).device  # 从真实模型读取 CPU/MPS/CUDA 设备。
+        generator = torch.Generator(device=&quot;cpu&quot;).manual_seed(seed)  # 使用 CPU 种子保持跨调用稳定。
+        latent = torch.randn(shape, generator=generator, device=&quot;cpu&quot;).to(device)  # 创建相同种子初始噪声。
+        times = torch.linspace(self.timesteps - 1, 0, steps).round().long().tolist()  # 选取降序 DDIM 时间步。
+        alpha_bar = self.alpha_bar.to(device)  # 将噪声计划移到模型设备。
+        model.eval()  # 关闭潜在的训练态随机层。
+        for index, current in enumerate(times):  # 依次逆向消除噪声。
+            batch_step = torch.full((shape[0],), current, device=device, dtype=torch.long)  # 构造模型所需时间条件。
+            predicted = model(latent, batch_step, prompts)  # 估计有文本条件下的噪声。
+            if guidance != 1.0:  # 仅在需要 CFG 时增加一次前向计算。
+                unconditional = model(latent, batch_step, [&quot;&quot;] * shape[0])  # 估计空提示词噪声。
+                predicted = unconditional + guidance * (predicted - unconditional)  # 应用分类器自由引导。
+            alpha = alpha_bar[current]  # 获取当前时间步的信号比例。
+            previous = times[index + 1] if index + 1 &lt; len(times) else -1  # 最后一步视为原始图像。
+            alpha_prev = alpha_bar[previous] if previous &gt;= 0 else torch.ones_like(alpha)  # 为终点使用全信号比例。
+            estimate = (latent - (1.0 - alpha).sqrt() * predicted) / alpha.sqrt()  # 根据预测噪声还原干净潜变量。
+            latent = alpha_prev.sqrt() * estimate + (1.0 - alpha_prev).sqrt() * predicted  # 执行 eta=0 的确定性 DDIM 更新。
+        return latent  # 返回供 VAE 解码的潜变量。
+</code></pre></details><details class="source"><summary>mini_sd/data.py · 完整源码</summary><pre class="code"><code>&quot;&quot;&quot;从图片和 MP4 读取有文本配对的真实训练样本。&quot;&quot;&quot;
+
+from pathlib import Path  # 使用跨平台路径管理训练目录。
+
+import cv2  # 解码 MP4 中真实的视频帧。
+import numpy as np  # 排列图像数组并均匀抽帧。
+from PIL import Image  # 裁剪、缩放与规范化图片。
+import torch  # 将像素转换为训练张量。
+from torch.utils.data import Dataset  # 接入 PyTorch DataLoader。
+
+
+def _prepare(image: Image.Image, size: int) -&gt; torch.Tensor:  # 对图片和视频帧执行相同预处理。
+    if size &lt; 16 or size % 4:  # 确保 VAE 两次下采样后仍有有效尺寸。
+        raise ValueError(&quot;图片边长须大于等于 16 且可被 4 整除&quot;)  # 及早拒绝坏配置。
+    image = image.convert(&quot;RGB&quot;)  # 统一输入到三通道 RGB。
+    side = min(image.size)  # 找到可裁剪的最大中心方形边长。
+    left = (image.width - side) // 2  # 计算中心裁剪的左边界。
+    top = (image.height - side) // 2  # 计算中心裁剪的上边界。
+    image = image.crop((left, top, left + side, top + side))  # 保持主体的中心部分。
+    image = image.resize((size, size), Image.Resampling.LANCZOS)  # 统一训练画幅。
+    array = np.asarray(image, dtype=np.float32).copy()  # 转换为可写的浮点数组。
+    return torch.from_numpy(array).permute(2, 0, 1) / 127.5 - 1.0  # 输出 CHW 且范围为 [-1,1]。
+
+
+def _caption(path: Path) -&gt; str:  # 读取与媒体同名的短文字说明。
+    text = path.with_suffix(&quot;.txt&quot;)  # 根据媒体文件名定位旁路标注。
+    return text.read_text(encoding=&quot;utf-8&quot;).strip() if text.exists() else &quot;&quot;  # 无标注时显式使用空条件。
+
+
+class ImageDataset(Dataset):  # 使用单张图片训练 VAE 和图像扩散器。
+    def __init__(self, folder: str | Path, size: int = 32):  # 确定样本位置与输出尺寸。
+        self.folder = Path(folder)  # 将调用参数归一化为路径对象。
+        self.size = size  # 保存生成与训练一致的像素边长。
+        self.paths = sorted(path for path in self.folder.iterdir() if path.suffix.lower() in (&quot;.png&quot;, &quot;.jpg&quot;, &quot;.jpeg&quot;, &quot;.webp&quot;)) if self.folder.is_dir() else []  # 只选择可读图像。
+        if not self.paths:  # 对空目录及时失败。
+            raise ValueError(f&quot;目录中没有图片：{self.folder}&quot;)  # 避免空批次伪装成功。
+
+    def __len__(self) -&gt; int:  # 提供 DataLoader 所需样本数。
+        return len(self.paths)  # 返回真实文件数量。
+
+    def __getitem__(self, index: int):  # 按索引加载并规范化一张图。
+        path = self.paths[index]  # 定位单个训练素材。
+        with Image.open(path) as image:  # 避免在 DataLoader 中泄漏文件句柄。
+            tensor = _prepare(image, self.size)  # 做中心裁剪、缩放和像素归一化。
+        return tensor, _caption(path)  # 将画面与对应短文本一起返回。
+
+
+class VideoDataset(Dataset):  # 读取固定帧数的视频片段用于三维扩散训练。
+    def __init__(self, folder: str | Path, size: int = 32, frames: int = 4):  # 配置目录和时空尺寸。
+        self.folder = Path(folder)  # 归一化数据目录。
+        self.size = size  # 保持与 VAE 训练尺寸一致。
+        self.frames = frames  # 规定每个样本的时间长度。
+        if frames &lt; 2:  # 视频分支要求至少两帧。
+            raise ValueError(&quot;视频至少需要两帧&quot;)  # 阻止伪视频训练。
+        self.paths = sorted(self.folder.glob(&quot;*.mp4&quot;)) if self.folder.is_dir() else []  # 只选择 MP4 数据。
+        if not self.paths:  # 防止没有媒体时空转。
+            raise ValueError(f&quot;目录中没有 MP4：{self.folder}&quot;)  # 标注真实错误来源。
+
+    def __len__(self) -&gt; int:  # 提供真实视频文件数量。
+        return len(self.paths)  # 每个文件对应一个训练片段。
+
+    def __getitem__(self, index: int):  # 从实际 MP4 解码并均匀抽帧。
+        path = self.paths[index]  # 定位当前视频素材。
+        capture = cv2.VideoCapture(str(path))  # 打开 OpenCV 视频解码器。
+        if not capture.isOpened():  # 立即检测无法打开的文件。
+            raise ValueError(f&quot;无法解码视频：{path}&quot;)  # 禁止用静态占位帧掩盖损坏视频。
+        frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))  # 从 MP4 元数据读取帧数而不缓存帧。
+        if frame_count &lt; self.frames:  # 媒体没有可靠且足够长的帧数信息时拒绝。
+            capture.release()  # 在报错前释放视频句柄。
+            raise ValueError(f&quot;视频帧数不足或元数据不可用：{path}&quot;)  # 提醒先用 FFmpeg 重封装。
+        positions = np.linspace(0, frame_count - 1, self.frames).round().astype(int)  # 在整段时间均匀选帧。
+        selected = set(int(position) for position in positions)  # 只为目标帧做图片预处理。
+        decoded = {}  # 最多保留用户要求的帧数，不缓存整段视频。
+        frame_index = 0  # 为顺序解码的每个真实帧标记索引。
+        try:  # 即使解码异常也释放文件句柄。
+            while frame_index &lt;= int(positions[-1]):  # 最后一帧取齐后不再读取其余画面。
+                ok, frame = capture.read()  # 顺序提取真实压缩视频帧。
+                if not ok:  # 播放到片尾或遇到解码错误。
+                    break  # 在下方报告缺帧，不制造占位帧。
+                if frame_index in selected:  # 只预处理均匀选择的目标帧。
+                    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # 转为 RGB 顺序。
+                    decoded[frame_index] = _prepare(Image.fromarray(rgb), self.size)  # 最多持有目标数量的张量。
+                frame_index += 1  # 推进真实视频帧位置。
+        finally:  # 不依赖 Python 回收机制管理句柄。
+            capture.release()  # 释放操作系统视频资源。
+        if len(decoded) != self.frames:  # 核对容器声称的帧数与真实可解码帧数。
+            raise ValueError(f&quot;视频实际可解码帧数不足 {self.frames}：{path}&quot;)  # 防止损坏 MP4 被静默补帧。
+        clip = torch.stack([decoded[int(position)] for position in positions], dim=1)  # 形成 [C,T,H,W] 视频片段。
+        return clip, _caption(path)  # 返回真实片段及配对提示词。
+</code></pre></details><details class="source"><summary>mini_sd/__main__.py · 完整源码</summary><pre class="code"><code>&quot;&quot;&quot;训练和推理 CLI：模型权重、数据和输出均显式指定。&quot;&quot;&quot;
+
+import argparse  # 定义可发现的命令行训练参数。
+import os  # 对检查点执行同文件系统原子替换。
+from pathlib import Path  # 统一处理跨平台输出路径。
+import subprocess  # 使用已安装的 FFmpeg 编码真正的 MP4。
+
+import numpy as np  # 将解码张量转换为媒体编码字节。
+from PIL import Image  # 将图像推理结果保存为 PNG。
+import torch  # 实现优化器、随机种子与设备管理。
+from torch.nn import functional as F  # 计算 VAE 重建误差。
+from torch.utils.data import DataLoader  # 顺序批量读取图片或视频。
+
+from .data import ImageDataset, VideoDataset  # 读取真实训练素材和文本条件。
+from .diffusion import Diffusion  # 执行噪声训练和 DDIM 推理。
+from .models import ImageDenoiser, TinyVAE, VideoDenoiser  # 实例化三种轻量模型。
+
+
+def _device(name: str) -&gt; torch.device:  # 按实际硬件选择运算设备。
+    if name == &quot;auto&quot;:  # 自动选择已可用的 GPU 后端。
+        name = &quot;cuda&quot; if torch.cuda.is_available() else &quot;mps&quot; if torch.backends.mps.is_available() else &quot;cpu&quot;  # CUDA 优先于 Apple GPU。
+    if name == &quot;cuda&quot; and not torch.cuda.is_available():  # 防止静默回退到 CPU。
+        raise ValueError(&quot;当前 Python 环境不可用 CUDA&quot;)  # 显示服务器侧驱动配置问题。
+    if name == &quot;mps&quot; and not torch.backends.mps.is_available():  # 防止错误配置 Apple GPU。
+        raise ValueError(&quot;当前 Python 环境不可用 MPS&quot;)  # 显示设备限制。
+    return torch.device(name)  # 交给 PyTorch 解析设备名称。
+
+
+def _load(path: str, kind: str) -&gt; dict:  # 仅加载本项目可信的检查点格式。
+    checkpoint = torch.load(path, map_location=&quot;cpu&quot;, weights_only=True)  # 禁用普通 pickle 对象反序列化。
+    if not isinstance(checkpoint, dict) or checkpoint.get(&quot;kind&quot;) != kind:  # 检查不同模型的权重没有被混用。
+        raise ValueError(f&quot;检查点不是 {kind}：{path}&quot;)  # 阻止图像权重当成视频权重。
+    return checkpoint  # 返回可复原的纯数据字典。
+
+
+def _save(path: str, payload: dict) -&gt; None:  # 以原子方式保存训练进度。
+    destination = Path(path)  # 归一化输出路径。
+    destination.parent.mkdir(parents=True, exist_ok=True)  # 支持新建的检查点目录。
+    temporary = destination.with_name(destination.name + &quot;.tmp&quot;)  # 将未完成写入留在临时文件。
+    torch.save(payload, temporary)  # 存储模型、优化器、配置与训练步数。
+    os.replace(temporary, destination)  # 避免中断时留下半截正式检查点。
+
+
+def _images(video: torch.Tensor) -&gt; torch.Tensor:  # 将视频批次拆成逐帧的 VAE 输入。
+    batch, channels, frames, height, width = video.shape  # 解包视频时空尺寸。
+    return video.permute(0, 2, 1, 3, 4).reshape(batch * frames, channels, height, width)  # 形成 [B*T,C,H,W]。
+
+
+def _videos(latents: torch.Tensor, batch: int, frames: int) -&gt; torch.Tensor:  # 将逐帧潜变量恢复视频格式。
+    _, channels, height, width = latents.shape  # 解包每帧潜变量尺寸。
+    return latents.reshape(batch, frames, channels, height, width).permute(0, 2, 1, 3, 4)  # 形成 [B,C,T,h,w]。
+
+
+def _next_batches(loader):  # 为有限步数训练循环供给数据。
+    while True:  # 在数据集用完以后继续下一轮训练。
+        for batch in loader:  # 让 DataLoader 控制打乱和批大小。
+            yield batch  # 交还一个真实媒体批次。
+
+
+def _validate_size(size: int) -&gt; None:  # 保证 VAE 和 UNet 都能整除空间尺寸。
+    if size &lt; 16 or size % 8:  # 两次 VAE 与一次 UNet 下采样合计要求八倍对齐。
+        raise ValueError(&quot;训练尺寸至少为 16，且必须是 8 的倍数&quot;)  # 让配置错误在训练前暴露。
+
+
+def train_vae(args) -&gt; None:  # 以真实图片优化共享的 VAE。
+    _validate_size(args.size)  # 防止训练到中途才触发尺寸不匹配。
+    device = _device(args.device)  # 确定此次训练所用实际设备。
+    dataset = ImageDataset(args.data, size=args.size)  # 建立用户图片数据集。
+    loader = _next_batches(DataLoader(dataset, batch_size=args.batch_size, shuffle=True, num_workers=0))  # 迭代真实图片样本。
+    model = TinyVAE(base=args.base).to(device)  # 从头创建轻量编码与解码器。
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)  # 训练 VAE 的全部参数。
+    finished = 0  # 默认从第零步开始训练。
+    if args.resume:  # 仅在用户显式要求时恢复进度。
+        checkpoint = _load(args.resume, &quot;vae&quot;)  # 从可信 VAE 检查点恢复。
+        if checkpoint[&quot;size&quot;] != args.size or checkpoint[&quot;base&quot;] != args.base:  # 防止错配导致权重加载失败。
+            raise ValueError(&quot;恢复训练的尺寸或宽度与检查点不一致&quot;)  # 说明具体不一致字段。
+        model.load_state_dict(checkpoint[&quot;model&quot;])  # 恢复已学习的 VAE 权重。
+        optimizer.load_state_dict(checkpoint[&quot;optimizer&quot;])  # 恢复优化器内部动量。
+        finished = checkpoint[&quot;step&quot;]  # 延续全局训练步数。
+    model.train()  # 启用训练时重参数化。
+    for local_step in range(args.steps):  # 仅执行明确要求的新增训练步数。
+        images, _ = next(loader)  # 取得真实训练图片，VAE 阶段不使用文字。
+        images = images.to(device)  # 将数据与网络放在同一设备。
+        reconstructed, mean, logvar = model(images)  # 同时生成重建图与潜分布。
+        reconstruction = F.mse_loss(reconstructed, images)  # 计算可微分的像素重建误差。
+        kl = -0.5 * (1.0 + logvar - mean.square() - logvar.exp()).mean()  # 将潜分布约束靠近单位正态。
+        loss = reconstruction + args.kl_weight * kl  # 平衡重建品质与采样结构。
+        optimizer.zero_grad(set_to_none=True)  # 清空旧梯度。
+        loss.backward()  # 将损失回传到编码器与解码器。
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)  # 限制梯度峰值。
+        optimizer.step()  # 实际更新 VAE 权重。
+        if local_step % max(1, args.steps // 20) == 0:  # 定期记录可核验的训练标量。
+            print(f&quot;VAE 步数 {finished + local_step + 1}，损失 {loss.item():.5f}&quot;, flush=True)  # 不捏造画质指标。
+    _save(args.out, {&quot;kind&quot;: &quot;vae&quot;, &quot;size&quot;: args.size, &quot;base&quot;: args.base, &quot;model&quot;: model.state_dict(), &quot;optimizer&quot;: optimizer.state_dict(), &quot;step&quot;: finished + args.steps})  # 保存 VAE 和真实训练状态。
+    print(f&quot;已保存 VAE：{args.out}&quot;, flush=True)  # 显示实际写入位置。
+
+
+def train_diffusion(args, video: bool) -&gt; None:  # 为图像和视频训练各自的噪声预测器。
+    device = _device(args.device)  # 选择运行设备。
+    vae_checkpoint = _load(args.vae, &quot;vae&quot;)  # 获取已训练的共享 VAE。
+    size = vae_checkpoint[&quot;size&quot;]  # 以 VAE 的训练尺寸约束新数据。
+    vae = TinyVAE(base=vae_checkpoint[&quot;base&quot;]).to(device)  # 重建相同宽度的 VAE。
+    vae.load_state_dict(vae_checkpoint[&quot;model&quot;])  # 载入实际训练过的编码器。
+    vae.eval()  # 冻结随机训练态特性。
+    vae.requires_grad_(False)  # 防止扩散阶段反向更新 VAE。
+    dataset = VideoDataset(args.data, size=size, frames=args.frames) if video else ImageDataset(args.data, size=size)  # 选择与模型对应的真实媒体。
+    loader = _next_batches(DataLoader(dataset, batch_size=args.batch_size, shuffle=True, num_workers=0))  # 建立可循环的训练批次。
+    model = (VideoDenoiser(base=args.base) if video else ImageDenoiser(base=args.base)).to(device)  # 选择 3D 或 2D 模型。
+    schedule = Diffusion(timesteps=args.diffusion_steps)  # 固定训练的噪声计划。
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)  # 仅优化对应的噪声预测器。
+    kind = &quot;video&quot; if video else &quot;image&quot;  # 标记权重类别以免混淆。
+    finished = 0  # 默认本次从头训练。
+    if args.resume:  # 显式恢复用户已有的扩散训练。
+        checkpoint = _load(args.resume, kind)  # 严格校验训练类别。
+        expected = {&quot;size&quot;: size, &quot;base&quot;: args.base, &quot;diffusion_steps&quot;: args.diffusion_steps}  # 明确要求架构和训练步数一致。
+        if video:  # 视频还须保持时间维度一致。
+            expected[&quot;frames&quot;] = args.frames  # 把帧数加入结构检查。
+        if any(checkpoint[key] != value for key, value in expected.items()):  # 排除不兼容恢复。
+            raise ValueError(&quot;恢复训练配置与检查点不一致&quot;)  # 给出直观的失败提示。
+        model.load_state_dict(checkpoint[&quot;model&quot;])  # 恢复扩散网络参数。
+        optimizer.load_state_dict(checkpoint[&quot;optimizer&quot;])  # 恢复优化器内部状态。
+        finished = checkpoint[&quot;step&quot;]  # 继续累计步数。
+    for local_step in range(args.steps):  # 执行明确要求的新增训练步骤。
+        pixels, prompts = next(loader)  # 从真实数据集中读媒体和标注。
+        with torch.no_grad():  # 不更新 VAE 参数或缓存无用梯度。
+            source = _images(pixels) if video else pixels  # 视频以同一个 VAE 编码逐帧图像。
+            latent, _, _ = vae.encode(source.to(device), sample=False)  # 获取确定性的媒体潜变量。
+            if video:  # 视频模型还原完整的时间维度。
+                latent = _videos(latent, pixels.shape[0], pixels.shape[2])  # 在潜空间连接相邻帧。
+        prompts = [prompt if torch.rand(()) &gt;= args.condition_dropout else &quot;&quot; for prompt in prompts]  # 用随机空条件训练 CFG 分支。
+        loss = schedule.train_step(model, latent, prompts, optimizer)  # 执行实际噪声预测梯度更新。
+        if local_step % max(1, args.steps // 20) == 0:  # 定期反馈可验证训练进度。
+            print(f&quot;{kind} 步数 {finished + local_step + 1}，噪声损失 {loss:.5f}&quot;, flush=True)  # 不将损失当成画质指标。
+    payload = {&quot;kind&quot;: kind, &quot;size&quot;: size, &quot;base&quot;: args.base, &quot;diffusion_steps&quot;: args.diffusion_steps, &quot;model&quot;: model.state_dict(), &quot;optimizer&quot;: optimizer.state_dict(), &quot;step&quot;: finished + args.steps}  # 封装完整恢复信息。
+    if video:  # 视频权重需记录固定推理帧数。
+        payload[&quot;frames&quot;] = args.frames  # 保证训练与推理时序一致。
+    _save(args.out, payload)  # 原子保存已训练的模型检查点。
+    print(f&quot;已保存 {kind} 模型：{args.out}&quot;, flush=True)  # 回报真实生成文件位置。
+
+
+def _to_rgb(tensor: torch.Tensor) -&gt; np.ndarray:  # 将 VAE 的 [-1,1] 输出转换成无符号 RGB。
+    pixels = ((tensor.detach().cpu().clamp(-1, 1) + 1) * 127.5).round().to(torch.uint8)  # 限制溢出并量化为 8 位。
+    return pixels.permute(1, 2, 0).numpy()  # 转换为编码器期望的 HWC 顺序。
+
+
+def sample(args, video: bool) -&gt; None:  # 从训练后的图像或视频检查点推理。
+    device = _device(args.device)  # 选择 CPU 或现有 GPU。
+    vae_checkpoint = _load(args.vae, &quot;vae&quot;)  # 加载共享潜空间解码器。
+    kind = &quot;video&quot; if video else &quot;image&quot;  # 决定所需模型类型。
+    checkpoint = _load(args.model, kind)  # 严格禁止交叉使用权重。
+    if vae_checkpoint[&quot;size&quot;] != checkpoint[&quot;size&quot;]:  # 检查推理阶段的像素尺寸一致性。
+        raise ValueError(&quot;VAE 与扩散模型的尺寸不一致&quot;)  # 阻止损坏或错误的输出。
+    vae = TinyVAE(base=vae_checkpoint[&quot;base&quot;]).to(device)  # 重建对应架构的 VAE。
+    vae.load_state_dict(vae_checkpoint[&quot;model&quot;])  # 装载实际训练过的解码权重。
+    vae.eval()  # 以固定模型行为推理。
+    model = (VideoDenoiser(base=checkpoint[&quot;base&quot;]) if video else ImageDenoiser(base=checkpoint[&quot;base&quot;])).to(device)  # 重建正确的去噪网络。
+    model.load_state_dict(checkpoint[&quot;model&quot;])  # 装载真实训练检查点。
+    schedule = Diffusion(timesteps=checkpoint[&quot;diffusion_steps&quot;])  # 复现与训练一致的噪声计划。
+    size = checkpoint[&quot;size&quot;]  # 从训练检查点确定输出画幅。
+    shape = (1, 4, checkpoint[&quot;frames&quot;], size // 4, size // 4) if video else (1, 4, size // 4, size // 4)  # 明确潜变量的时空形状。
+    latent = schedule.sample(model, shape, [args.prompt], steps=args.sample_steps, seed=args.seed, guidance=args.guidance)  # 完成真正的 DDIM 反向采样。
+    destination = Path(args.out)  # 归一化媒体输出路径。
+    destination.parent.mkdir(parents=True, exist_ok=True)  # 创建属于此任务的输出目录。
+    with torch.no_grad():  # 解码不需保存梯度。
+        decoded = vae.decode(_images(latent) if video else latent)  # 视频逐帧解码共用的 VAE。
+    if not video:  # 图像直接保存单张 PNG。
+        Image.fromarray(_to_rgb(decoded[0])).save(destination, format=&quot;PNG&quot;)  # 写出可由 PIL 打开的真实图片。
+    else:  # 视频使用 FFmpeg 将实际生成帧编码成 MP4。
+        frames = np.stack([_to_rgb(frame) for frame in decoded], axis=0)  # 构造 [T,H,W,RGB] 连续帧。
+        command = [&quot;ffmpeg&quot;, &quot;-y&quot;, &quot;-loglevel&quot;, &quot;error&quot;, &quot;-f&quot;, &quot;rawvideo&quot;, &quot;-pix_fmt&quot;, &quot;rgb24&quot;, &quot;-s&quot;, f&quot;{size}x{size}&quot;, &quot;-r&quot;, str(args.fps), &quot;-i&quot;, &quot;pipe:0&quot;, &quot;-an&quot;, &quot;-c:v&quot;, &quot;libx264&quot;, &quot;-pix_fmt&quot;, &quot;yuv420p&quot;, &quot;-movflags&quot;, &quot;+faststart&quot;, str(destination)]  # 显式选择无声 H.264 兼容输出。
+        subprocess.run(command, input=frames.tobytes(), capture_output=True, check=True)  # 任何编码失败均返回真实错误。
+    print(f&quot;已生成 {kind}：{destination}&quot;, flush=True)  # 回报已完成的文件路径。
+
+
+def main() -&gt; None:  # 解析命令并分派到正确的训练/推理流程。
+    parser = argparse.ArgumentParser(description=&quot;Mini SD：从零训练的轻量图像/视频潜扩散实验&quot;)  # 提供用户可发现的帮助。
+    commands = parser.add_subparsers(dest=&quot;command&quot;, required=True)  # 创建互斥子命令。
+    for name in (&quot;train-vae&quot;, &quot;train-image&quot;, &quot;train-video&quot;, &quot;sample-image&quot;, &quot;sample-video&quot;):  # 逐项建立命令参数。
+        sub = commands.add_parser(name)  # 创建命令专属解析器。
+        sub.add_argument(&quot;--device&quot;, choices=(&quot;auto&quot;, &quot;cpu&quot;, &quot;mps&quot;, &quot;cuda&quot;), default=&quot;auto&quot;)  # 允许明确指定设备。
+        if name.startswith(&quot;train&quot;):  # 训练命令需要数据集和优化配置。
+            sub.add_argument(&quot;--data&quot;, required=True)  # 指定输入训练媒体目录。
+            sub.add_argument(&quot;--steps&quot;, type=int, default=100)  # 指定新增梯度更新次数。
+            sub.add_argument(&quot;--batch-size&quot;, type=int, default=1)  # 控制显存占用。
+            sub.add_argument(&quot;--lr&quot;, type=float, default=0.0002)  # 指定优化器学习率。
+            sub.add_argument(&quot;--base&quot;, type=int, default=32)  # 指定网络宽度。
+            sub.add_argument(&quot;--resume&quot;)  # 可选恢复已有的同类检查点。
+            sub.add_argument(&quot;--out&quot;, required=True)  # 指定新检查点文件路径。
+        if name != &quot;train-vae&quot;:  # 扩散训练与所有采样都需要 VAE 权重。
+            sub.add_argument(&quot;--vae&quot;, required=True)  # 指定预训练的本项目 VAE。
+        if name == &quot;train-vae&quot;:  # VAE 阶段需要显式确定像素尺寸。
+            sub.add_argument(&quot;--size&quot;, type=int, default=32)  # 默认教学用小画幅。
+            sub.add_argument(&quot;--kl-weight&quot;, type=float, default=0.001)  # 控制潜变量正则强度。
+        if name in (&quot;train-image&quot;, &quot;train-video&quot;):  # 扩散训练独有的噪声参数。
+            sub.add_argument(&quot;--diffusion-steps&quot;, type=int, default=100)  # 固定训练噪声计划长度。
+            sub.add_argument(&quot;--condition-dropout&quot;, type=float, default=0.1)  # 为 CFG 训练空条件分支。
+        if name == &quot;train-video&quot;:  # 三维模型需要固定时间长度。
+            sub.add_argument(&quot;--frames&quot;, type=int, default=4)  # 默认生成短片段以适配小显存。
+        if name.startswith(&quot;sample&quot;):  # 推理命令需要模型与提示词。
+            sub.add_argument(&quot;--model&quot;, required=True)  # 指定图像或视频扩散检查点。
+            sub.add_argument(&quot;--out&quot;, required=True)  # 指定 PNG 或 MP4 输出路径。
+            sub.add_argument(&quot;--prompt&quot;, default=&quot;&quot;)  # 指定本训练集对应的短文本条件。
+            sub.add_argument(&quot;--sample-steps&quot;, type=int, default=20)  # 控制 DDIM 推理步数。
+            sub.add_argument(&quot;--seed&quot;, type=int, default=0)  # 允许固定随机种子。
+            sub.add_argument(&quot;--guidance&quot;, type=float, default=1.0)  # 控制文本 CFG 权重。
+        if name == &quot;sample-video&quot;:  # 视频容器还需要播放帧率。
+            sub.add_argument(&quot;--fps&quot;, type=int, default=8)  # 指定无声输出播放速度。
+    args = parser.parse_args()  # 真正读取命令行输入。
+    if args.command.startswith(&quot;train&quot;):  # 训练前统一检查数值边界。
+        if args.steps &lt; 1 or args.batch_size &lt; 1 or args.lr &lt;= 0 or args.base &lt; 4:  # 阻止不可能完成的训练配置。
+            parser.error(&quot;steps/batch-size 必须为正，lr 须大于零，base 至少为 4&quot;)  # 报错而非写入空模型。
+    if args.command == &quot;train-vae&quot;:  # 将训练限制在指定 VAE 功能。
+        train_vae(args)  # 执行实际 VAE 训练。
+    elif args.command in (&quot;train-image&quot;, &quot;train-video&quot;):  # 区分不同维度的扩散网络。
+        if not 0 &lt;= args.condition_dropout &lt;= 1:  # 拒绝无效概率。
+            parser.error(&quot;condition-dropout 必须位于 0 到 1&quot;)  # 显示配置错误。
+        train_diffusion(args, video=args.command == &quot;train-video&quot;)  # 执行实际噪声训练。
+    else:  # 剩余子命令均为媒体推理。
+        if args.command == &quot;sample-video&quot; and args.fps &lt; 1:  # 防止视频帧率非法。
+            parser.error(&quot;fps 至少为 1&quot;)  # 在解码前给出可读错误。
+        sample(args, video=args.command == &quot;sample-video&quot;)  # 输出 PNG 或 MP4。
+
+
+if __name__ == &quot;__main__&quot;:  # 支持以 Python 模块方式直接运行。
+    main()  # 执行命令行入口。
+</code></pre></details></section><footer>Mini SD Lab · 只读当前项目真实源码生成 · 离线 HTML 教学书</footer></main></div></body></html>
